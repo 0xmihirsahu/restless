@@ -612,6 +612,143 @@ describe("RestlessEscrow", function () {
     });
   });
 
+  describe("cancelDeal", function () {
+    it("should allow depositor to cancel an unfunded deal", async function () {
+      const { escrow, depositor, counterparty, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+
+      await escrowAsDepositor.write.cancelDeal([1n]);
+
+      const deal = await escrow.read.getDeal([1n]);
+      assert.equal(deal.status, 5); // Cancelled
+    });
+
+    it("should allow counterparty to cancel an unfunded deal", async function () {
+      const { escrow, depositor, counterparty, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+
+      const escrowAsCounterparty = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: counterparty } }
+      );
+
+      await escrowAsCounterparty.write.cancelDeal([1n]);
+
+      const deal = await escrow.read.getDeal([1n]);
+      assert.equal(deal.status, 5); // Cancelled
+    });
+
+    it("should reject cancel from stranger", async function () {
+      const { escrow, depositor, counterparty, stranger, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+
+      const escrowAsStranger = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: stranger } }
+      );
+
+      await viem.assertions.revertWith(
+        escrowAsStranger.write.cancelDeal([1n]),
+        "Only deal parties can cancel"
+      );
+    });
+
+    it("should reject cancel of a funded deal", async function () {
+      const { escrow, depositor, counterparty, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+      await escrowAsDepositor.write.fundDeal([1n]);
+
+      await viem.assertions.revertWith(
+        escrowAsDepositor.write.cancelDeal([1n]),
+        "Deal not in Created state"
+      );
+    });
+
+    it("should emit DealCancelled event", async function () {
+      const { escrow, depositor, counterparty, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+
+      const hash = await escrowAsDepositor.write.cancelDeal([1n]);
+      const publicClient = await viem.getPublicClient();
+      const receipt = await publicClient.getTransactionReceipt({ hash });
+
+      // At least one log should be emitted
+      assert.ok(receipt.logs.length > 0, "Should emit event");
+    });
+  });
+
   describe("claimTimeout", function () {
     it("should refund depositor after timeout", async function () {
       const { escrow, token, depositor, counterparty, amount, dealHash } =

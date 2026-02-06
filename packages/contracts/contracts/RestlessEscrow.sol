@@ -20,7 +20,8 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         Funded,
         Settled,
         Disputed,
-        TimedOut
+        TimedOut,
+        Cancelled
     }
 
     struct Deal {
@@ -52,6 +53,7 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
     event DealSettled(uint256 indexed dealId, uint256 totalPayout);
     event DealDisputed(uint256 indexed dealId, address disputedBy);
     event DealTimedOut(uint256 indexed dealId, uint256 refundAmount);
+    event DealCancelled(uint256 indexed dealId, address cancelledBy);
 
     bytes32 public constant SETTLE_TYPEHASH =
         keccak256("SettleRequest(uint256 dealId,bytes32 dealHash)");
@@ -129,6 +131,20 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         deal.disputedAt = block.timestamp;
 
         emit DealDisputed(dealId, msg.sender);
+    }
+
+    function cancelDeal(uint256 dealId) external whenNotPaused {
+        Deal storage deal = deals[dealId];
+        require(deal.id != 0, "Deal does not exist");
+        require(deal.status == DealStatus.Created, "Deal not in Created state");
+        require(
+            msg.sender == deal.depositor || msg.sender == deal.counterparty,
+            "Only deal parties can cancel"
+        );
+
+        deal.status = DealStatus.Cancelled;
+
+        emit DealCancelled(dealId, msg.sender);
     }
 
     function settleDeal(uint256 dealId, bytes calldata lifiData) external nonReentrant whenNotPaused {

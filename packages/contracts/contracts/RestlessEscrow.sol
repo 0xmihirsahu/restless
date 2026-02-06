@@ -41,12 +41,18 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
     IERC20 public immutable token;
     IYieldAdapter public immutable yieldAdapter;
     ISettlement public immutable settlement;
+    address public immutable owner;
 
     uint256 public dealCount;
     mapping(uint256 => Deal) public deals;
 
     uint256 public constant MIN_TIMEOUT = 1 days;
     uint256 public constant MAX_TIMEOUT = 30 days;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
 
     event DealCreated(uint256 indexed dealId, address indexed depositor, address indexed counterparty, uint256 amount, bytes32 dealHash);
     event DealFunded(uint256 indexed dealId, uint256 amount);
@@ -68,6 +74,15 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         token = IERC20(_token);
         yieldAdapter = IYieldAdapter(_yieldAdapter);
         settlement = ISettlement(_settlement);
+        owner = msg.sender;
+    }
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     function createDeal(

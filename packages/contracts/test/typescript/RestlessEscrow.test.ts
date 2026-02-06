@@ -749,6 +749,96 @@ describe("RestlessEscrow", function () {
     });
   });
 
+  describe("pause / unpause", function () {
+    it("should allow owner to pause the contract", async function () {
+      const { escrow } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      await escrow.write.pause();
+
+      const paused = await escrow.read.paused();
+      assert.equal(paused, true);
+    });
+
+    it("should allow owner to unpause the contract", async function () {
+      const { escrow } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      await escrow.write.pause();
+      await escrow.write.unpause();
+
+      const paused = await escrow.read.paused();
+      assert.equal(paused, false);
+    });
+
+    it("should reject pause from non-owner", async function () {
+      const { escrow, depositor } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await viem.assertions.revertWith(
+        escrowAsDepositor.write.pause(),
+        "Only owner"
+      );
+    });
+
+    it("should reject unpause from non-owner", async function () {
+      const { escrow, depositor } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      await escrow.write.pause();
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await viem.assertions.revertWith(
+        escrowAsDepositor.write.unpause(),
+        "Only owner"
+      );
+    });
+
+    it("should block createDeal when paused", async function () {
+      const { escrow, depositor, counterparty, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      await escrow.write.pause();
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await viem.assertions.revertWithCustomError(
+        escrowAsDepositor.write.createDeal([
+          counterparty.account.address,
+          amount,
+          100,
+          86400n,
+          dealHash,
+        ]),
+        escrow,
+        "EnforcedPause"
+      );
+    });
+
+    it("should expose owner address", async function () {
+      const { escrow, deployer } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const owner = await escrow.read.owner();
+      assert.equal(owner, getAddress(deployer.account.address));
+    });
+  });
+
   describe("claimTimeout", function () {
     it("should refund depositor after timeout", async function () {
       const { escrow, token, depositor, counterparty, amount, dealHash } =

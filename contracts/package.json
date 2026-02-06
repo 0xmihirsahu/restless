@@ -9,7 +9,8 @@
     "test:coverage": "npx hardhat test --coverage",
     "deploy:sepolia": "npx hardhat ignition deploy ignition/modules/RestlessModule.ts --network sepolia",
     "deploy:baseSepolia": "npx hardhat ignition deploy ignition/modules/RestlessModule.ts --network baseSepolia",
-    "export-abis": "node scripts/export-abis.mjs"
+    "export-abis": "node scripts/export-abis.mjs",
+    "postinstall": "rm -rf node_modules/@uniswap/v4-periphery/lib node_modules/@uniswap/v4-periphery/remappings.txt"
   },
   "devDependencies": {
     "@aave/core-v3": "^1.19.3",

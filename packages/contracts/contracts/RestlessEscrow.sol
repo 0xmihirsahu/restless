@@ -5,12 +5,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./interfaces/IYieldAdapter.sol";
 import "./interfaces/ISettlement.sol";
 
 /// @title RestlessEscrow
 /// @notice P2P escrow where locked funds earn yield while waiting for deal completion
-contract RestlessEscrow is ReentrancyGuard, Pausable {
+contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
     using SafeERC20 for IERC20;
 
     enum DealStatus {
@@ -51,7 +53,12 @@ contract RestlessEscrow is ReentrancyGuard, Pausable {
     event DealDisputed(uint256 indexed dealId, address disputedBy);
     event DealTimedOut(uint256 indexed dealId, uint256 refundAmount);
 
-    constructor(address _token, address _yieldAdapter, address _settlement) {
+    bytes32 public constant SETTLE_TYPEHASH =
+        keccak256("SettleRequest(uint256 dealId,bytes32 dealHash)");
+
+    constructor(address _token, address _yieldAdapter, address _settlement)
+        EIP712("RestlessEscrow", "1")
+    {
         require(_token != address(0), "Invalid token");
         require(_yieldAdapter != address(0), "Invalid adapter");
         require(_settlement != address(0), "Invalid settlement");
@@ -133,12 +140,40 @@ contract RestlessEscrow is ReentrancyGuard, Pausable {
             "Only deal parties can settle"
         );
 
+        _executeSettlement(deal, dealId, lifiData);
+    }
+
+    function settleDealSigned(
+        uint256 dealId,
+        bytes calldata lifiData,
+        bytes calldata depositorSig,
+        bytes calldata counterpartySig
+    ) external nonReentrant whenNotPaused {
+        Deal storage deal = deals[dealId];
+        require(deal.id != 0, "Deal does not exist");
+        require(deal.status == DealStatus.Funded, "Deal not in Funded state");
+
+        // Build EIP-712 struct hash
+        bytes32 structHash = keccak256(
+            abi.encode(SETTLE_TYPEHASH, dealId, deal.dealHash)
+        );
+        bytes32 digest = _hashTypedDataV4(structHash);
+
+        // Verify both signatures
+        address recoveredDepositor = ECDSA.recover(digest, depositorSig);
+        require(recoveredDepositor == deal.depositor, "Invalid depositor signature");
+
+        address recoveredCounterparty = ECDSA.recover(digest, counterpartySig);
+        require(recoveredCounterparty == deal.counterparty, "Invalid counterparty signature");
+
+        _executeSettlement(deal, dealId, lifiData);
+    }
+
+    function _executeSettlement(Deal storage deal, uint256 dealId, bytes calldata lifiData) internal {
         deal.status = DealStatus.Settled;
 
-        // Withdraw principal + yield from adapter
         uint256 total = yieldAdapter.withdraw(dealId);
 
-        // Approve settlement to pull tokens and distribute
         token.approve(address(settlement), total);
         settlement.settle(
             dealId,

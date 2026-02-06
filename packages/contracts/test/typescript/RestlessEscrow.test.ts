@@ -391,6 +391,227 @@ describe("RestlessEscrow", function () {
     });
   });
 
+  describe("settleDealSigned", function () {
+    // EIP-712 domain and types for signing
+    function getEIP712Config(escrowAddress: string) {
+      return {
+        domain: {
+          name: "RestlessEscrow",
+          version: "1",
+          chainId: 31337, // hardhat chain id
+          verifyingContract: escrowAddress as `0x${string}`,
+        },
+        types: {
+          SettleRequest: [
+            { name: "dealId", type: "uint256" },
+            { name: "dealHash", type: "bytes32" },
+          ],
+        },
+      };
+    }
+
+    it("should settle with valid dual signatures from both parties", async function () {
+      const { escrow, settlement, depositor, counterparty, stranger, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+      await escrowAsDepositor.write.fundDeal([1n]);
+
+      // Both parties sign the settlement
+      const { domain, types } = getEIP712Config(escrow.address);
+      const message = { dealId: 1n, dealHash };
+
+      const depositorSig = await depositor.signTypedData({
+        domain,
+        types,
+        primaryType: "SettleRequest",
+        message,
+      });
+
+      const counterpartySig = await counterparty.signTypedData({
+        domain,
+        types,
+        primaryType: "SettleRequest",
+        message,
+      });
+
+      // A stranger submits both signatures — should work
+      const escrowAsStranger = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: stranger } }
+      );
+
+      await escrowAsStranger.write.settleDealSigned([
+        1n,
+        "0x",
+        depositorSig,
+        counterpartySig,
+      ]);
+
+      const deal = await escrow.read.getDeal([1n]);
+      assert.equal(deal.status, 2); // Settled
+    });
+
+    it("should reject if depositor signature is invalid", async function () {
+      const { escrow, depositor, counterparty, stranger, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+      await escrowAsDepositor.write.fundDeal([1n]);
+
+      const { domain, types } = getEIP712Config(escrow.address);
+      const message = { dealId: 1n, dealHash };
+
+      // Stranger signs instead of depositor
+      const fakeSig = await stranger.signTypedData({
+        domain,
+        types,
+        primaryType: "SettleRequest",
+        message,
+      });
+
+      const counterpartySig = await counterparty.signTypedData({
+        domain,
+        types,
+        primaryType: "SettleRequest",
+        message,
+      });
+
+      await viem.assertions.revertWith(
+        escrow.write.settleDealSigned([
+          1n,
+          "0x",
+          fakeSig,
+          counterpartySig,
+        ]),
+        "Invalid depositor signature"
+      );
+    });
+
+    it("should reject if counterparty signature is invalid", async function () {
+      const { escrow, depositor, counterparty, stranger, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+      await escrowAsDepositor.write.fundDeal([1n]);
+
+      const { domain, types } = getEIP712Config(escrow.address);
+      const message = { dealId: 1n, dealHash };
+
+      const depositorSig = await depositor.signTypedData({
+        domain,
+        types,
+        primaryType: "SettleRequest",
+        message,
+      });
+
+      // Stranger signs instead of counterparty
+      const fakeSig = await stranger.signTypedData({
+        domain,
+        types,
+        primaryType: "SettleRequest",
+        message,
+      });
+
+      await viem.assertions.revertWith(
+        escrow.write.settleDealSigned([
+          1n,
+          "0x",
+          depositorSig,
+          fakeSig,
+        ]),
+        "Invalid counterparty signature"
+      );
+    });
+
+    it("should reject if deal hash in signature doesn't match", async function () {
+      const { escrow, depositor, counterparty, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+      await escrowAsDepositor.write.fundDeal([1n]);
+
+      const { domain, types } = getEIP712Config(escrow.address);
+      // Sign with wrong dealHash
+      const wrongHash = keccak256(toHex("wrong-terms"));
+      const message = { dealId: 1n, dealHash: wrongHash };
+
+      const depositorSig = await depositor.signTypedData({
+        domain,
+        types,
+        primaryType: "SettleRequest",
+        message,
+      });
+
+      const counterpartySig = await counterparty.signTypedData({
+        domain,
+        types,
+        primaryType: "SettleRequest",
+        message,
+      });
+
+      // Both signed, but with wrong dealHash — sigs won't match deal's stored hash
+      await viem.assertions.revertWith(
+        escrow.write.settleDealSigned([
+          1n,
+          "0x",
+          depositorSig,
+          counterpartySig,
+        ]),
+        "Invalid depositor signature"
+      );
+    });
+  });
+
   describe("claimTimeout", function () {
     it("should refund depositor after timeout", async function () {
       const { escrow, token, depositor, counterparty, amount, dealHash } =

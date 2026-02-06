@@ -2,6 +2,7 @@ import "dotenv/config";
 import { defineConfig } from "hardhat/config";
 import HardhatToolboxViem from "@nomicfoundation/hardhat-toolbox-viem";
 
+
 const networks: Record<string, any> = {
   hardhat: {
     type: "edr-simulated",
@@ -20,11 +21,11 @@ if (process.env.SEPOLIA_RPC_URL) {
   };
 }
 
-if (process.env.ARB_SEPOLIA_RPC_URL) {
-  networks.arbitrumSepolia = {
+if (process.env.BASE_SEPOLIA_RPC_URL) {
+  networks.baseSepolia = {
     type: "http",
     chainType: "l1",
-    url: process.env.ARB_SEPOLIA_RPC_URL,
+    url: process.env.BASE_SEPOLIA_RPC_URL,
     accounts: process.env.SEPOLIA_PRIVATE_KEY
       ? [process.env.SEPOLIA_PRIVATE_KEY]
       : [],
@@ -44,4 +45,9 @@ export default defineConfig({
     },
   },
   networks,
+  verify: {
+    etherscan: {
+      apiKey: process.env.ETHERSCAN_API_KEY ?? "",
+    },
+  },
 });

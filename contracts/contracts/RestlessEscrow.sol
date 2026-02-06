@@ -219,6 +219,61 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         emit DealSettled(dealId, total);
     }
 
+    function settleDealWithHook(uint256 dealId, address preferredToken) external nonReentrant whenNotPaused {
+        Deal storage deal = deals[dealId];
+        require(deal.id != 0, "Deal does not exist");
+        require(deal.status == DealStatus.Funded, "Deal not in Funded state");
+        require(
+            msg.sender == deal.depositor || msg.sender == deal.counterparty,
+            "Only deal parties can settle"
+        );
+
+        _executeHookSettlement(deal, dealId, preferredToken);
+    }
+
+    function settleDealWithHookSigned(
+        uint256 dealId,
+        address preferredToken,
+        bytes calldata depositorSig,
+        bytes calldata counterpartySig
+    ) external nonReentrant whenNotPaused {
+        Deal storage deal = deals[dealId];
+        require(deal.id != 0, "Deal does not exist");
+        require(deal.status == DealStatus.Funded, "Deal not in Funded state");
+
+        bytes32 structHash = keccak256(
+            abi.encode(SETTLE_TYPEHASH, dealId, deal.dealHash)
+        );
+        bytes32 digest = _hashTypedDataV4(structHash);
+
+        address recoveredDepositor = ECDSA.recover(digest, depositorSig);
+        require(recoveredDepositor == deal.depositor, "Invalid depositor signature");
+
+        address recoveredCounterparty = ECDSA.recover(digest, counterpartySig);
+        require(recoveredCounterparty == deal.counterparty, "Invalid counterparty signature");
+
+        _executeHookSettlement(deal, dealId, preferredToken);
+    }
+
+    function _executeHookSettlement(Deal storage deal, uint256 dealId, address preferredToken) internal {
+        deal.status = DealStatus.Settled;
+
+        uint256 total = yieldAdapter.withdraw(dealId);
+
+        token.approve(address(settlement), total);
+        settlement.settleWithHook(
+            dealId,
+            deal.depositor,
+            deal.counterparty,
+            deal.amount,
+            total,
+            deal.yieldSplitCounterparty,
+            preferredToken
+        );
+
+        emit DealSettled(dealId, total);
+    }
+
     function claimTimeout(uint256 dealId) external nonReentrant {
         Deal storage deal = deals[dealId];
         require(deal.id != 0, "Deal does not exist");

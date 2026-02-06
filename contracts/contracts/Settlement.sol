@@ -104,6 +104,7 @@ contract Settlement is ISettlement {
     /// @param total The total withdrawn amount (principal + yield)
     /// @param yieldSplitCounterparty Percentage of yield going to counterparty (0-100)
     /// @param preferredToken The token counterparty wants their yield in
+    /// @inheritdoc ISettlement
     function settleWithHook(
         uint256 dealId,
         address depositor,
@@ -112,7 +113,7 @@ contract Settlement is ISettlement {
         uint256 total,
         uint8 yieldSplitCounterparty,
         address preferredToken
-    ) external {
+    ) external override {
         require(principal > 0, "Principal must be > 0");
         require(total >= principal, "Total less than principal");
         require(yieldSplitCounterparty <= 100, "Invalid yield split");

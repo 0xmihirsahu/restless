@@ -8,7 +8,7 @@
     "test": "npx hardhat test",
     "test:coverage": "npx hardhat test --coverage",
     "deploy:sepolia": "npx hardhat ignition deploy ignition/modules/RestlessModule.ts --network sepolia",
-    "deploy:arbSepolia": "npx hardhat ignition deploy ignition/modules/RestlessModule.ts --network arbitrumSepolia",
+    "deploy:baseSepolia": "npx hardhat ignition deploy ignition/modules/RestlessModule.ts --network baseSepolia",
     "export-abis": "node scripts/export-abis.mjs"
   },
   "devDependencies": {

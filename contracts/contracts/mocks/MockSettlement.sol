@@ -15,7 +15,18 @@ contract MockSettlement is ISettlement {
         bytes lifiData;
     }
 
+    struct SettleWithHookCall {
+        uint256 dealId;
+        address depositor;
+        address counterparty;
+        uint256 principal;
+        uint256 total;
+        uint8 yieldSplitCounterparty;
+        address preferredToken;
+    }
+
     SettleCall[] public settleCalls;
+    SettleWithHookCall[] public settleWithHookCalls;
 
     function settle(
         uint256 dealId,
@@ -37,7 +48,31 @@ contract MockSettlement is ISettlement {
         }));
     }
 
+    function settleWithHook(
+        uint256 dealId,
+        address depositor,
+        address counterparty,
+        uint256 principal,
+        uint256 total,
+        uint8 yieldSplitCounterparty,
+        address preferredToken
+    ) external override {
+        settleWithHookCalls.push(SettleWithHookCall({
+            dealId: dealId,
+            depositor: depositor,
+            counterparty: counterparty,
+            principal: principal,
+            total: total,
+            yieldSplitCounterparty: yieldSplitCounterparty,
+            preferredToken: preferredToken
+        }));
+    }
+
     function getSettleCallCount() external view returns (uint256) {
         return settleCalls.length;
+    }
+
+    function getSettleWithHookCallCount() external view returns (uint256) {
+        return settleWithHookCalls.length;
     }
 }

@@ -10,6 +10,7 @@ contract MockSettlement is ISettlement {
         address depositor;
         address counterparty;
         uint256 principal;
+        uint256 total;
         uint8 yieldSplitCounterparty;
         bytes lifiData;
     }
@@ -21,6 +22,7 @@ contract MockSettlement is ISettlement {
         address depositor,
         address counterparty,
         uint256 principal,
+        uint256 total,
         uint8 yieldSplitCounterparty,
         bytes calldata lifiData
     ) external override {
@@ -29,6 +31,7 @@ contract MockSettlement is ISettlement {
             depositor: depositor,
             counterparty: counterparty,
             principal: principal,
+            total: total,
             yieldSplitCounterparty: yieldSplitCounterparty,
             lifiData: lifiData
         }));

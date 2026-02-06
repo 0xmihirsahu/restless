@@ -1,31 +1,30 @@
-import { expect } from "chai";
-import hre from "hardhat";
-import {
-  loadFixture,
-} from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { network } from "hardhat";
 import { parseUnits, getAddress, keccak256, toHex } from "viem";
+
+const { viem, networkHelpers } = await network.connect();
 
 describe("RestlessEscrow", function () {
   async function deployFixture() {
     const [deployer, depositor, counterparty, stranger] =
-      await hre.viem.getWalletClients();
-    const publicClient = await hre.viem.getPublicClient();
+      await viem.getWalletClients();
 
     // Deploy mock ERC20 (USDC with 6 decimals)
-    const token = await hre.viem.deployContract("MockERC20", [
+    const token = await viem.deployContract("MockERC20", [
       "USD Coin",
       "USDC",
       6n,
     ]);
 
     // Deploy mock adapter and settlement
-    const adapter = await hre.viem.deployContract("MockYieldAdapter", [
+    const adapter = await viem.deployContract("MockYieldAdapter", [
       token.address,
     ]);
-    const settlement = await hre.viem.deployContract("MockSettlement");
+    const settlement = await viem.deployContract("MockSettlement");
 
     // Deploy escrow
-    const escrow = await hre.viem.deployContract("RestlessEscrow", [
+    const escrow = await viem.deployContract("RestlessEscrow", [
       token.address,
       adapter.address,
       settlement.address,
@@ -36,11 +35,9 @@ describe("RestlessEscrow", function () {
     await token.write.mint([depositor.account.address, amount]);
 
     // Approve escrow to spend depositor's USDC
-    const tokenAsDepositor = await hre.viem.getContractAt(
-      "MockERC20",
-      token.address,
-      { client: { wallet: depositor } }
-    );
+    const tokenAsDepositor = await viem.getContractAt("MockERC20", token.address, {
+      client: { wallet: depositor },
+    });
     await tokenAsDepositor.write.approve([escrow.address, amount]);
 
     const dealHash = keccak256(toHex("deal-terms-v1"));
@@ -54,7 +51,6 @@ describe("RestlessEscrow", function () {
       depositor,
       counterparty,
       stranger,
-      publicClient,
       amount,
       dealHash,
     };
@@ -63,9 +59,9 @@ describe("RestlessEscrow", function () {
   describe("createDeal", function () {
     it("should create a deal with correct parameters", async function () {
       const { escrow, depositor, counterparty, amount, dealHash } =
-        await loadFixture(deployFixture);
+        await networkHelpers.loadFixture(deployFixture);
 
-      const escrowAsDepositor = await hre.viem.getContractAt(
+      const escrowAsDepositor = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: depositor } }
@@ -80,87 +76,86 @@ describe("RestlessEscrow", function () {
       ]);
 
       const deal = await escrow.read.getDeal([1n]);
-      expect(deal.depositor).to.equal(
-        getAddress(depositor.account.address)
-      );
-      expect(deal.counterparty).to.equal(
-        getAddress(counterparty.account.address)
-      );
-      expect(deal.amount).to.equal(amount);
-      expect(deal.yieldSplitCounterparty).to.equal(100);
-      expect(deal.status).to.equal(0); // Created
+      assert.equal(deal.depositor, getAddress(depositor.account.address));
+      assert.equal(deal.counterparty, getAddress(counterparty.account.address));
+      assert.equal(deal.amount, amount);
+      assert.equal(deal.yieldSplitCounterparty, 100);
+      assert.equal(deal.status, 0); // Created
     });
 
     it("should reject zero amount", async function () {
       const { escrow, depositor, counterparty, dealHash } =
-        await loadFixture(deployFixture);
+        await networkHelpers.loadFixture(deployFixture);
 
-      const escrowAsDepositor = await hre.viem.getContractAt(
+      const escrowAsDepositor = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: depositor } }
       );
 
-      await expect(
+      await viem.assertions.revertWith(
         escrowAsDepositor.write.createDeal([
           counterparty.account.address,
           0n,
           100,
           86400n,
           dealHash,
-        ])
-      ).to.be.rejectedWith("Amount must be > 0");
+        ]),
+        "Amount must be > 0"
+      );
     });
 
     it("should reject self as counterparty", async function () {
       const { escrow, depositor, amount, dealHash } =
-        await loadFixture(deployFixture);
+        await networkHelpers.loadFixture(deployFixture);
 
-      const escrowAsDepositor = await hre.viem.getContractAt(
+      const escrowAsDepositor = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: depositor } }
       );
 
-      await expect(
+      await viem.assertions.revertWith(
         escrowAsDepositor.write.createDeal([
           depositor.account.address,
           amount,
           100,
           86400n,
           dealHash,
-        ])
-      ).to.be.rejectedWith("Cannot escrow with self");
+        ]),
+        "Cannot escrow with self"
+      );
     });
 
     it("should reject invalid yield split > 100", async function () {
       const { escrow, depositor, counterparty, amount, dealHash } =
-        await loadFixture(deployFixture);
+        await networkHelpers.loadFixture(deployFixture);
 
-      const escrowAsDepositor = await hre.viem.getContractAt(
+      const escrowAsDepositor = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: depositor } }
       );
 
-      await expect(
+      await viem.assertions.revertWith(
         escrowAsDepositor.write.createDeal([
           counterparty.account.address,
           amount,
-          101, // > 100
+          101,
           86400n,
           dealHash,
-        ])
-      ).to.be.rejectedWith("Invalid yield split");
+        ]),
+        "Invalid yield split"
+      );
     });
   });
 
   describe("fundDeal", function () {
     it("should fund a deal and transfer tokens to adapter", async function () {
       const { escrow, token, adapter, depositor, counterparty, amount, dealHash } =
-        await loadFixture(deployFixture);
+        await networkHelpers.loadFixture(deployFixture);
 
-      const escrowAsDepositor = await hre.viem.getContractAt(
+      const escrowAsDepositor = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: depositor } }
@@ -177,18 +172,18 @@ describe("RestlessEscrow", function () {
       await escrowAsDepositor.write.fundDeal([1n]);
 
       const deal = await escrow.read.getDeal([1n]);
-      expect(deal.status).to.equal(1); // Funded
+      assert.equal(deal.status, 1); // Funded
 
       // Tokens should be in the adapter now
       const adapterBalance = await token.read.balanceOf([adapter.address]);
-      expect(adapterBalance).to.equal(amount);
+      assert.equal(adapterBalance, amount);
     });
 
     it("should reject funding by non-depositor", async function () {
       const { escrow, depositor, counterparty, amount, dealHash } =
-        await loadFixture(deployFixture);
+        await networkHelpers.loadFixture(deployFixture);
 
-      const escrowAsDepositor = await hre.viem.getContractAt(
+      const escrowAsDepositor = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: depositor } }
@@ -202,24 +197,25 @@ describe("RestlessEscrow", function () {
         dealHash,
       ]);
 
-      const escrowAsCounterparty = await hre.viem.getContractAt(
+      const escrowAsCounterparty = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: counterparty } }
       );
 
-      await expect(
-        escrowAsCounterparty.write.fundDeal([1n])
-      ).to.be.rejectedWith("Only depositor can fund");
+      await viem.assertions.revertWith(
+        escrowAsCounterparty.write.fundDeal([1n]),
+        "Only depositor can fund"
+      );
     });
   });
 
   describe("disputeDeal", function () {
     it("should allow either party to dispute a funded deal", async function () {
       const { escrow, depositor, counterparty, amount, dealHash } =
-        await loadFixture(deployFixture);
+        await networkHelpers.loadFixture(deployFixture);
 
-      const escrowAsDepositor = await hre.viem.getContractAt(
+      const escrowAsDepositor = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: depositor } }
@@ -234,7 +230,7 @@ describe("RestlessEscrow", function () {
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
-      const escrowAsCounterparty = await hre.viem.getContractAt(
+      const escrowAsCounterparty = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: counterparty } }
@@ -243,14 +239,14 @@ describe("RestlessEscrow", function () {
       await escrowAsCounterparty.write.disputeDeal([1n]);
 
       const deal = await escrow.read.getDeal([1n]);
-      expect(deal.status).to.equal(3); // Disputed
+      assert.equal(deal.status, 3); // Disputed
     });
 
     it("should reject dispute from stranger", async function () {
       const { escrow, depositor, counterparty, stranger, amount, dealHash } =
-        await loadFixture(deployFixture);
+        await networkHelpers.loadFixture(deployFixture);
 
-      const escrowAsDepositor = await hre.viem.getContractAt(
+      const escrowAsDepositor = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: depositor } }
@@ -265,24 +261,25 @@ describe("RestlessEscrow", function () {
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
-      const escrowAsStranger = await hre.viem.getContractAt(
+      const escrowAsStranger = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: stranger } }
       );
 
-      await expect(
-        escrowAsStranger.write.disputeDeal([1n])
-      ).to.be.rejectedWith("Only deal parties can dispute");
+      await viem.assertions.revertWith(
+        escrowAsStranger.write.disputeDeal([1n]),
+        "Only deal parties can dispute"
+      );
     });
   });
 
   describe("claimTimeout", function () {
     it("should refund depositor after timeout", async function () {
-      const { escrow, token, depositor, counterparty, amount, dealHash, publicClient } =
-        await loadFixture(deployFixture);
+      const { escrow, token, depositor, counterparty, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
 
-      const escrowAsDepositor = await hre.viem.getContractAt(
+      const escrowAsDepositor = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: depositor } }
@@ -296,30 +293,27 @@ describe("RestlessEscrow", function () {
         dealHash,
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
-
-      // Dispute
       await escrowAsDepositor.write.disputeDeal([1n]);
 
       // Fast-forward past timeout
-      await hre.network.provider.send("evm_increaseTime", [86401]);
-      await hre.network.provider.send("evm_mine");
+      await networkHelpers.increaseTime(86401);
 
       // Claim timeout
       await escrowAsDepositor.write.claimTimeout([1n]);
 
       const deal = await escrow.read.getDeal([1n]);
-      expect(deal.status).to.equal(4); // TimedOut
+      assert.equal(deal.status, 4); // TimedOut
 
       // Depositor should get funds back
       const balance = await token.read.balanceOf([depositor.account.address]);
-      expect(balance).to.equal(amount); // principal returned (mock has 0 yield by default)
+      assert.equal(balance, amount);
     });
 
     it("should reject timeout before period expires", async function () {
       const { escrow, depositor, counterparty, amount, dealHash } =
-        await loadFixture(deployFixture);
+        await networkHelpers.loadFixture(deployFixture);
 
-      const escrowAsDepositor = await hre.viem.getContractAt(
+      const escrowAsDepositor = await viem.getContractAt(
         "RestlessEscrow",
         escrow.address,
         { client: { wallet: depositor } }
@@ -335,9 +329,10 @@ describe("RestlessEscrow", function () {
       await escrowAsDepositor.write.fundDeal([1n]);
       await escrowAsDepositor.write.disputeDeal([1n]);
 
-      await expect(
-        escrowAsDepositor.write.claimTimeout([1n])
-      ).to.be.rejectedWith("Timeout not elapsed");
+      await viem.assertions.revertWith(
+        escrowAsDepositor.write.claimTimeout([1n]),
+        "Timeout not elapsed"
+      );
     });
   });
 });

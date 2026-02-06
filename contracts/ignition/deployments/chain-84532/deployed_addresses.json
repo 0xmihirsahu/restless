@@ -1,0 +1,6 @@
+{
+  "RestlessModule#AaveYieldAdapter": "0xE2917457Ba14Cba595cc0a538C40E00f3f574d2b",
+  "RestlessModule#Settlement": "0x3a0152E60C2fD743CcD8B28f728243BB665Bd3Fd",
+  "RestlessModule#RestlessEscrow": "0x00064397094225D9bD136d84854C02e48da1e5Dc",
+  "RestlessModule#RestlessSettlementHook": "0x2485aF7660Af4AbA5C58aeEd3e0cc89a59B565ba"
+}

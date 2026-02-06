@@ -7,10 +7,7 @@ import { useAccount } from "wagmi";
 import { formatUnits } from "viem";
 import { useDealCount, useDeals } from "@/hooks/useDeal";
 import { getDealStatusLabel, getDealStatusColor } from "@/lib/contracts";
-
-function truncateAddress(addr: string) {
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-}
+import { EnsName } from "@/components/EnsName";
 
 export default function DealsPage() {
   const { address } = useAccount();
@@ -92,8 +89,12 @@ export default function DealsPage() {
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span>
-                      {isDepositor ? "you" : truncateAddress(deal.depositor)} &rarr;{" "}
-                      {!isDepositor ? "you" : truncateAddress(deal.counterparty)}
+                      {isDepositor ? "you" : (
+                        <EnsName address={deal.depositor as `0x${string}`} />
+                      )} &rarr;{" "}
+                      {!isDepositor ? "you" : (
+                        <EnsName address={deal.counterparty as `0x${string}`} />
+                      )}
                     </span>
                     <span>yield split: {deal.yieldSplitCounterparty}% to counterparty</span>
                   </div>

@@ -11,6 +11,7 @@ import { getDealStatusLabel, getDealStatusColor } from "@/lib/contracts";
 import { YieldTicker } from "@/components/YieldTicker";
 import { CrossChainSettle } from "@/components/CrossChainSettle";
 import { StateChannelPanel } from "@/components/StateChannelPanel";
+import { EnsName } from "@/components/EnsName";
 
 function truncateAddress(addr: string) {
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -93,13 +94,17 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           <div className="flex justify-between">
             <span className="text-muted-foreground">depositor</span>
             <span className="text-foreground font-mono text-xs">
-              {isDepositor ? "you" : truncateAddress(deal.depositor)}
+              {isDepositor ? "you" : (
+                <EnsName address={deal.depositor as `0x${string}`} showAvatar />
+              )}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">counterparty</span>
             <span className="text-foreground font-mono text-xs">
-              {isCounterparty ? "you" : truncateAddress(deal.counterparty)}
+              {isCounterparty ? "you" : (
+                <EnsName address={deal.counterparty as `0x${string}`} showAvatar />
+              )}
             </span>
           </div>
           <div className="flex justify-between">

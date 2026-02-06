@@ -2,12 +2,15 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { isAddress, parseUnits } from "viem";
 import { useCreateDeal, useApproveUSDC, useFundDeal } from "@/hooks/useEscrowWrite";
 import { CONTRACTS } from "@/lib/contracts";
+import { EnsAddressInput } from "@/components/EnsAddressInput";
+import { EnsName } from "@/components/EnsName";
+import { useEnsPreferences } from "@/hooks/useEnsPreferences";
 
 export default function NewDealPage() {
   const router = useRouter();
@@ -23,6 +26,25 @@ export default function NewDealPage() {
   const { createDeal, isPending: createPending, isSuccess: createSuccess } = useCreateDeal();
   const { approve, isPending: approvePending, isSuccess: approveSuccess } = useApproveUSDC();
   const { fundDeal, isPending: fundPending, isSuccess: fundSuccess } = useFundDeal();
+
+  // ENS preferences: read counterparty's preferred deal settings from their ENS text records
+  const counterpartyAddr = isAddress(counterparty) ? counterparty as `0x${string}` : undefined;
+  const prefs = useEnsPreferences(counterpartyAddr);
+  const appliedPrefsFor = useRef<string | null>(null);
+
+  // Auto-fill form fields from counterparty's ENS text records (once per address)
+  useEffect(() => {
+    if (!prefs.hasPreferences || !counterpartyAddr) return;
+    if (appliedPrefsFor.current === counterpartyAddr) return;
+    appliedPrefsFor.current = counterpartyAddr;
+
+    if (prefs.yieldSplit !== null) setYieldSplit(prefs.yieldSplit);
+    if (prefs.timeout !== null) setTimeoutDays(prefs.timeout);
+  }, [prefs, counterpartyAddr]);
+
+  const handleCounterpartyChange = useCallback((addr: string) => {
+    setCounterparty(addr);
+  }, []);
 
   const isValidForm =
     isAddress(counterparty) &&
@@ -94,25 +116,34 @@ export default function NewDealPage() {
 
         {step === "form" && (
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="counterparty" className="block text-sm text-foreground mb-1.5">
-                counterparty address
-              </label>
-              <input
-                id="counterparty"
-                type="text"
-                placeholder="0x... or ENS name"
-                value={counterparty}
-                onChange={(e) => setCounterparty(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-background border border-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-              />
-              {counterparty && !isAddress(counterparty) && (
-                <p className="text-xs text-destructive mt-1">invalid address</p>
-              )}
-              {counterparty.toLowerCase() === address?.toLowerCase() && (
-                <p className="text-xs text-destructive mt-1">cannot create deal with yourself</p>
-              )}
-            </div>
+            <EnsAddressInput
+              value={counterparty}
+              onChange={handleCounterpartyChange}
+              selfAddress={address}
+            />
+
+            {/* ENS Preferences Banner */}
+            {prefs.hasPreferences && prefs.ensName && (
+              <div className="border border-green-500/30 bg-green-500/5 p-3 space-y-1">
+                <div className="text-xs text-green-500 font-medium">
+                  deal preferences loaded from {prefs.ensName}
+                </div>
+                <div className="text-xs text-muted-foreground space-y-0.5">
+                  {prefs.yieldSplit !== null && (
+                    <div>preferred yield split: {prefs.yieldSplit}%</div>
+                  )}
+                  {prefs.timeout !== null && (
+                    <div>preferred timeout: {prefs.timeout} days</div>
+                  )}
+                  {prefs.chain !== null && (
+                    <div>preferred chain: {prefs.chain}</div>
+                  )}
+                  {prefs.token && (
+                    <div>preferred token: {prefs.token}</div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div>
               <label htmlFor="amount" className="block text-sm text-foreground mb-1.5">
@@ -201,7 +232,13 @@ export default function NewDealPage() {
             <div className="border border-border p-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">counterparty</span>
-                <span className="text-foreground font-mono text-xs">{counterparty.slice(0, 10)}...{counterparty.slice(-6)}</span>
+                <span className="text-foreground font-mono text-xs">
+                  {isAddress(counterparty) ? (
+                    <EnsName address={counterparty as `0x${string}`} />
+                  ) : (
+                    `${counterparty.slice(0, 10)}...${counterparty.slice(-6)}`
+                  )}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">amount</span>

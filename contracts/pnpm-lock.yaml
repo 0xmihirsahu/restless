@@ -38,6 +38,9 @@ importers:
       hardhat:
         specifier: ^3.0.0
         version: 3.1.7
+      solmate:
+        specifier: ^6.8.0
+        version: 6.8.0
       viem:
         specifier: ^2.45.1
         version: 2.45.1(zod@3.25.76)
@@ -780,6 +783,9 @@ packages:
 
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
+
+  solmate@6.8.0:
+    resolution: {integrity: sha512-/oI8kgEvSxGG1mrFv3FmCEZd0F8Z9VzRmoYMIhzmmzt6mjtPwfdCm3oh8yOL7bMHJBSfXJuMpnMPrM0uyaKsKg==}
 
   split2@3.2.2:
     resolution: {integrity: sha512-9NThjpgZnifTkJpzTZ7Eue85S49QwpNhZTq6GRJwObb6jnLFNGB7Qm73V5HewTROPyxD0C29xqmaI68bQtV+hg==}
@@ -1685,6 +1691,8 @@ snapshots:
   semver@7.7.4: {}
 
   sisteransi@1.0.5: {}
+
+  solmate@6.8.0: {}
 
   split2@3.2.2:
     dependencies:

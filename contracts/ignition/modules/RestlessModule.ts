@@ -33,8 +33,10 @@ const RestlessModule = buildModule("RestlessModule", (m) => {
   // 4. Link adapter to escrow (one-time initialization)
   m.call(adapter, "setEscrow", [escrow]);
 
-  // 5. Deploy RestlessSettlementHook (optional, for Uniswap v4 prize track)
-  const hook = m.contract("RestlessSettlementHook", [
+  // 5. Deploy MockRestlessSettlementHook for testnet demo
+  //    The real RestlessSettlementHook (v4 BaseHook) requires CREATE2 deployment
+  //    with mined address bits — see scripts/deploy-hook.ts for production deploy.
+  const hook = m.contract("MockRestlessSettlementHook", [
     usdcAddress,
     settlement,
   ]);

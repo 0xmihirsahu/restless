@@ -10,7 +10,7 @@
     "deploy:sepolia": "npx hardhat ignition deploy ignition/modules/RestlessModule.ts --network sepolia",
     "deploy:baseSepolia": "npx hardhat ignition deploy ignition/modules/RestlessModule.ts --network baseSepolia",
     "export-abis": "node scripts/export-abis.mjs",
-    "postinstall": "rm -rf node_modules/@uniswap/v4-periphery/lib node_modules/@uniswap/v4-periphery/remappings.txt"
+    "postinstall": "rm -rf node_modules/@uniswap/v4-periphery/lib node_modules/@uniswap/v4-periphery/remappings.txt node_modules/@uniswap/v4-core/lib node_modules/@uniswap/v4-core/remappings.txt"
   },
   "devDependencies": {
     "@aave/core-v3": "^1.19.3",
@@ -23,6 +23,7 @@
     "dotenv": "^16.5.0",
     "forge-std": "github:foundry-rs/forge-std#v1.9.7",
     "hardhat": "^3.0.0",
+    "solmate": "^6.8.0",
     "viem": "^2.45.1"
   }
 }

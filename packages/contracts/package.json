@@ -1,0 +1,20 @@
+{
+  "name": "@restless/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "test:coverage": "npx hardhat test --coverage",
+    "deploy:sepolia": "npx hardhat ignition deploy ignition/modules/RestlessModule.ts --network sepolia",
+    "deploy:arbSepolia": "npx hardhat ignition deploy ignition/modules/RestlessModule.ts --network arbitrumSepolia"
+  },
+  "devDependencies": {
+    "hardhat": "^3.0.0",
+    "@nomicfoundation/hardhat-toolbox-viem": "^4.0.0",
+    "@openzeppelin/contracts": "^5.2.0",
+    "@aave/v3-core": "^1.22.0",
+    "dotenv": "^16.5.0"
+  }
+}

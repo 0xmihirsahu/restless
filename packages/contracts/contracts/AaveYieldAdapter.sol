@@ -26,29 +26,47 @@ contract AaveYieldAdapter is IYieldAdapter {
     IERC20 public immutable token;
     IERC20 public immutable aToken;
     IAavePool public immutable aavePool;
-    address public immutable escrow;
+    address public owner;
+    address public escrow;
+    bool private escrowSet;
 
     mapping(uint256 => DepositRecord) public deposits;
     uint256 public totalDeposited;
 
     event Deposited(uint256 indexed dealId, uint256 amount, uint256 aTokenReceived);
     event Withdrawn(uint256 indexed dealId, uint256 principal, uint256 total);
+    event EscrowSet(address escrow);
 
     modifier onlyEscrow() {
         require(msg.sender == escrow, "Only escrow");
         _;
     }
 
-    constructor(address _token, address _aToken, address _aavePool, address _escrow) {
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
+
+    constructor(address _token, address _aToken, address _aavePool) {
         require(_token != address(0), "Invalid token");
         require(_aToken != address(0), "Invalid aToken");
         require(_aavePool != address(0), "Invalid pool");
-        require(_escrow != address(0), "Invalid escrow");
 
         token = IERC20(_token);
         aToken = IERC20(_aToken);
         aavePool = IAavePool(_aavePool);
+        owner = msg.sender;
+    }
+
+    /// @notice Set the escrow address (one-time, called after escrow deployment)
+    function setEscrow(address _escrow) external onlyOwner {
+        require(!escrowSet, "Escrow already set");
+        require(_escrow != address(0), "Invalid escrow");
+
         escrow = _escrow;
+        escrowSet = true;
+
+        emit EscrowSet(_escrow);
     }
 
     /// @inheritdoc IYieldAdapter
@@ -84,17 +102,14 @@ contract AaveYieldAdapter is IYieldAdapter {
         uint256 dealShare;
 
         if (totalDeposited == record.principal) {
-            // Only deal in the adapter — withdraw everything
             dealShare = totalATokens;
         } else {
-            // Multiple deals — proportional share
             dealShare = (totalATokens * record.principal) / totalDeposited;
         }
 
         record.active = false;
         totalDeposited -= record.principal;
 
-        // Approve pool to pull aTokens and withdraw USDC
         aToken.approve(address(aavePool), dealShare);
         total = aavePool.withdraw(address(token), dealShare, escrow);
 

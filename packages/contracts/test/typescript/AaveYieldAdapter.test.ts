@@ -16,13 +16,15 @@ describe("AaveYieldAdapter", function () {
     // Deploy mock Aave pool
     const pool = await viem.deployContract("MockAavePool", [usdc.address, aUsdc.address]);
 
-    // Deploy adapter with escrowSigner as the "escrow" (caller)
+    // Deploy adapter WITHOUT escrow (3 params)
     const adapter = await viem.deployContract("AaveYieldAdapter", [
       usdc.address,
       aUsdc.address,
       pool.address,
-      escrowSigner.account.address,
     ]);
+
+    // Set escrow address (one-time initialization)
+    await adapter.write.setEscrow([escrowSigner.account.address]);
 
     const amount = parseUnits("5000", 6); // 5000 USDC
 
@@ -53,6 +55,73 @@ describe("AaveYieldAdapter", function () {
       amount,
     };
   }
+
+  describe("setEscrow", function () {
+    it("should allow owner to set escrow address once", async function () {
+      const [deployer, escrowSigner] = await viem.getWalletClients();
+
+      const usdc = await viem.deployContract("MockERC20", ["USD Coin", "USDC", 6n]);
+      const aUsdc = await viem.deployContract("MockERC20", ["Aave USDC", "aUSDC", 6n]);
+      const pool = await viem.deployContract("MockAavePool", [usdc.address, aUsdc.address]);
+
+      const adapter = await viem.deployContract("AaveYieldAdapter", [
+        usdc.address,
+        aUsdc.address,
+        pool.address,
+      ]);
+
+      await adapter.write.setEscrow([escrowSigner.account.address]);
+
+      const escrow = await adapter.read.escrow();
+      assert.equal(escrow.toLowerCase(), escrowSigner.account.address.toLowerCase());
+    });
+
+    it("should reject setting escrow twice", async function () {
+      const [deployer, escrowSigner] = await viem.getWalletClients();
+
+      const usdc = await viem.deployContract("MockERC20", ["USD Coin", "USDC", 6n]);
+      const aUsdc = await viem.deployContract("MockERC20", ["Aave USDC", "aUSDC", 6n]);
+      const pool = await viem.deployContract("MockAavePool", [usdc.address, aUsdc.address]);
+
+      const adapter = await viem.deployContract("AaveYieldAdapter", [
+        usdc.address,
+        aUsdc.address,
+        pool.address,
+      ]);
+
+      await adapter.write.setEscrow([escrowSigner.account.address]);
+
+      await viem.assertions.revertWith(
+        adapter.write.setEscrow([escrowSigner.account.address]),
+        "Escrow already set"
+      );
+    });
+
+    it("should reject non-owner setting escrow", async function () {
+      const [deployer, stranger] = await viem.getWalletClients();
+
+      const usdc = await viem.deployContract("MockERC20", ["USD Coin", "USDC", 6n]);
+      const aUsdc = await viem.deployContract("MockERC20", ["Aave USDC", "aUSDC", 6n]);
+      const pool = await viem.deployContract("MockAavePool", [usdc.address, aUsdc.address]);
+
+      const adapter = await viem.deployContract("AaveYieldAdapter", [
+        usdc.address,
+        aUsdc.address,
+        pool.address,
+      ]);
+
+      const adapterAsStranger = await viem.getContractAt(
+        "AaveYieldAdapter",
+        adapter.address,
+        { client: { wallet: stranger } }
+      );
+
+      await viem.assertions.revertWith(
+        adapterAsStranger.write.setEscrow([stranger.account.address]),
+        "Only owner"
+      );
+    });
+  });
 
   describe("deposit", function () {
     it("should deposit USDC into Aave and record the deal", async function () {

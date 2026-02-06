@@ -5,7 +5,7 @@ import { parseUnits } from "viem";
 
 const { viem, networkHelpers } = await network.connect();
 
-describe("RestlessSettlementHook", function () {
+describe("MockRestlessSettlementHook", function () {
   async function deployFixture() {
     const [deployer, settlement, recipient] =
       await viem.getWalletClients();
@@ -23,7 +23,7 @@ describe("RestlessSettlementHook", function () {
     ]);
 
     // Deploy the hook (settlement address is the authorized caller)
-    const hook = await viem.deployContract("RestlessSettlementHook", [
+    const hook = await viem.deployContract("MockRestlessSettlementHook", [
       usdc.address,
       settlement.account.address,
     ]);
@@ -47,7 +47,7 @@ describe("RestlessSettlementHook", function () {
 
     // Get hook as settlement caller
     const hookAsSettlement = await viem.getContractAt(
-      "RestlessSettlementHook",
+      "MockRestlessSettlementHook",
       hook.address,
       { client: { wallet: settlement } }
     );

@@ -605,7 +605,7 @@ describe("Settlement", function () {
       ]);
 
       // Deploy hook with settlement as authorized caller
-      const hook = await viem.deployContract("RestlessSettlementHook", [
+      const hook = await viem.deployContract("MockRestlessSettlementHook", [
         usdc.address,
         settlement.address,
       ]);

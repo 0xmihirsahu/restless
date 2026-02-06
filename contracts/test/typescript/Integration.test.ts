@@ -215,7 +215,7 @@ describe("Integration: Full Deal Lifecycle", function () {
     // Deploy a WETH mock and the hook
     const weth = await viem.deployContract("MockERC20", ["Wrapped Ether", "WETH", 18n]);
 
-    const hook = await viem.deployContract("RestlessSettlementHook", [
+    const hook = await viem.deployContract("MockRestlessSettlementHook", [
       usdc.address,
       settlement.address,
     ]);

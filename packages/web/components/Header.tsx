@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import dynamic from "next/dynamic";
 import { ThemeToggle } from "./ThemeToggle";
+
+const WalletButton = dynamic(
+  () => import("./WalletButton").then((m) => m.WalletButton),
+  { ssr: false, loading: () => <div className="w-32 h-9" /> }
+);
 
 const Header = () => {
   return (
@@ -26,73 +31,7 @@ const Header = () => {
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <ConnectButton.Custom>
-          {({
-            account,
-            chain,
-            openAccountModal,
-            openChainModal,
-            openConnectModal,
-            mounted,
-          }) => {
-            const ready = mounted;
-            const connected = ready && account && chain;
-
-            return (
-              <div
-                {...(!ready && {
-                  "aria-hidden": true,
-                  style: {
-                    opacity: 0,
-                    pointerEvents: "none",
-                    userSelect: "none",
-                  },
-                })}
-              >
-                {(() => {
-                  if (!connected) {
-                    return (
-                      <button
-                        onClick={openConnectModal}
-                        className="px-4 py-2 text-sm border border-primary text-primary hover:bg-primary hover:text-black transition-colors"
-                      >
-                        connect wallet
-                      </button>
-                    );
-                  }
-
-                  if (chain.unsupported) {
-                    return (
-                      <button
-                        onClick={openChainModal}
-                        className="px-4 py-2 text-sm border border-destructive text-destructive hover:bg-destructive hover:text-white transition-colors"
-                      >
-                        wrong network
-                      </button>
-                    );
-                  }
-
-                  return (
-                    <div className="flex items-center gap-3 text-sm">
-                      <button
-                        onClick={openChainModal}
-                        className="px-3 py-1.5 border border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-colors"
-                      >
-                        {chain.name?.toLowerCase()}
-                      </button>
-                      <button
-                        onClick={openAccountModal}
-                        className="px-3 py-1.5 border border-primary/50 text-primary hover:border-primary transition-colors"
-                      >
-                        {account.displayName}
-                      </button>
-                    </div>
-                  );
-                })()}
-              </div>
-            );
-          }}
-        </ConnectButton.Custom>
+          <WalletButton />
         </div>
       </div>
     </header>

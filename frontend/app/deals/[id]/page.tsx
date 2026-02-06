@@ -9,6 +9,7 @@ import { useDeal } from "@/hooks/useDeal";
 import { useSettleDeal, useDisputeDeal, useCancelDeal, useClaimTimeout, useFundDeal } from "@/hooks/useEscrowWrite";
 import { getDealStatusLabel, getDealStatusColor } from "@/lib/contracts";
 import { YieldTicker } from "@/components/YieldTicker";
+import { CrossChainSettle } from "@/components/CrossChainSettle";
 
 function truncateAddress(addr: string) {
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -159,13 +160,16 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               </button>
             )}
             {canSettle && (
-              <button
-                onClick={() => { settleDeal(dealId); refetch(); }}
-                disabled={settlePending}
-                className="w-full px-4 py-2.5 text-sm bg-green-600 text-white hover:opacity-90 transition-opacity disabled:opacity-40"
-              >
-                {settlePending ? "confirming..." : "settle deal"}
-              </button>
+              <CrossChainSettle
+                dealId={dealId}
+                counterparty={deal.counterparty}
+                amount={deal.amount}
+                onSettle={(lifiData) => {
+                  settleDeal(dealId, lifiData);
+                  refetch();
+                }}
+                isPending={settlePending}
+              />
             )}
             {canDispute && (
               <button

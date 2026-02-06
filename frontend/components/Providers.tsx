@@ -11,7 +11,7 @@ import {
   type Theme,
 } from "@rainbow-me/rainbowkit";
 import { ThemeProvider, useTheme } from "next-themes";
-import { sepolia } from "wagmi/chains";
+import { sepolia, baseSepolia, base, arbitrum } from "wagmi/chains";
 
 const queryClient = new QueryClient();
 
@@ -21,13 +21,16 @@ const config = projectId
   ? getDefaultConfig({
       appName: "Restless",
       projectId,
-      chains: [sepolia],
+      chains: [sepolia, baseSepolia, base, arbitrum],
       ssr: true,
     })
   : createConfig({
-      chains: [sepolia],
+      chains: [sepolia, baseSepolia, base, arbitrum],
       transports: {
         [sepolia.id]: http(),
+        [baseSepolia.id]: http(),
+        [base.id]: http(),
+        [arbitrum.id]: http(),
       },
       ssr: true,
     });

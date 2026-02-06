@@ -57,14 +57,16 @@ export function useSettleDeal() {
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
-  function settleDeal(dealId: bigint) {
+  function settleDeal(dealId: bigint, lifiData?: `0x${string}`) {
     writeContract({
       address: CONTRACTS.escrow,
       abi: restlessEscrowAbi,
       functionName: "settleDeal",
-      args: [dealId, "0x"],
+      args: [dealId, lifiData ?? "0x"],
     }, {
-      onSuccess: () => toast.success("Deal settled! Funds distributed."),
+      onSuccess: () => toast.success(
+        lifiData ? "Deal settled! Cross-chain transfer initiated via LI.FI." : "Deal settled! Funds distributed."
+      ),
       onError: (err) => toast.error(err.message.slice(0, 100)),
     });
   }

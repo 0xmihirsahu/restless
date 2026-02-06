@@ -13,8 +13,8 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "web3 starter",
-  description: "ethereum dapp starter with solidity and next.js",
+  title: "Restless — Your Escrow, Never Idle",
+  description: "P2P escrow where locked funds earn yield in Aave while waiting for deal completion",
 };
 
 export default function RootLayout({

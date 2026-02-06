@@ -19,7 +19,7 @@ const projectId = process.env.NEXT_PUBLIC_RAINBOWKIT_PROJECT_ID || "";
 
 const config = projectId
   ? getDefaultConfig({
-      appName: "web3 starter",
+      appName: "Restless",
       projectId,
       chains: [sepolia],
       ssr: true,

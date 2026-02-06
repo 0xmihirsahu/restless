@@ -11,10 +11,11 @@
     "deploy:arbSepolia": "npx hardhat ignition deploy ignition/modules/RestlessModule.ts --network arbitrumSepolia"
   },
   "devDependencies": {
-    "hardhat": "^3.0.0",
-    "@nomicfoundation/hardhat-toolbox-viem": "^4.0.0",
+    "@aave/core-v3": "^1.19.3",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
     "@openzeppelin/contracts": "^5.2.0",
-    "@aave/v3-core": "^1.22.0",
-    "dotenv": "^16.5.0"
+    "@types/node": "^25.2.1",
+    "dotenv": "^16.5.0",
+    "hardhat": "^3.0.0"
   }
 }

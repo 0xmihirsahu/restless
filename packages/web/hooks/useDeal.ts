@@ -1,7 +1,10 @@
 "use client";
 
+import { type Abi } from "viem";
 import { useReadContract, useReadContracts } from "wagmi";
 import { restlessEscrowAbi, CONTRACTS } from "@/lib/contracts";
+
+const escrowAbi = restlessEscrowAbi as Abi;
 
 export type Deal = {
   id: bigint;
@@ -75,9 +78,9 @@ export function useAccruedYield(dealId: bigint | undefined) {
 export function useDeals(count: number) {
   const contracts = Array.from({ length: count }, (_, i) => ({
     address: CONTRACTS.escrow,
-    abi: restlessEscrowAbi,
+    abi: escrowAbi,
     functionName: "getDeal" as const,
-    args: [BigInt(i + 1)],
+    args: [BigInt(i + 1)] as const,
   }));
 
   const { data, isLoading, error } = useReadContracts({

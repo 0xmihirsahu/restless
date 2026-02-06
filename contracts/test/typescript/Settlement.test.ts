@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { network } from "hardhat";
-import { parseUnits, getAddress } from "viem";
+import { parseUnits, getAddress, encodeFunctionData } from "viem";
 
 const { viem, networkHelpers } = await network.connect();
 
@@ -18,8 +18,11 @@ describe("Settlement", function () {
     ]);
 
     // Deploy settlement — escrow is the deployer for simplicity
+    // No LI.FI diamond or hook for basic tests
     const settlement = await viem.deployContract("Settlement", [
       token.address,
+      "0x0000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000",
     ]);
 
     const principal = parseUnits("5000", 6);
@@ -246,6 +249,357 @@ describe("Settlement", function () {
 
       // Verify the transaction succeeded
       assert.equal(receipt.status, "success");
+    });
+  });
+
+  // ─── LI.FI Cross-Chain Routing ───────────────────────────────────
+
+  describe("settle — LI.FI cross-chain routing", function () {
+    async function deployLiFiFixture() {
+      const [deployer, depositor, counterparty] =
+        await viem.getWalletClients();
+
+      const token = await viem.deployContract("MockERC20", [
+        "USD Coin",
+        "USDC",
+        6n,
+      ]);
+
+      const lifiDiamond = await viem.deployContract("MockLiFiDiamond", []);
+
+      // Deploy settlement with LI.FI diamond, no hook
+      const settlement = await viem.deployContract("Settlement", [
+        token.address,
+        lifiDiamond.address,
+        "0x0000000000000000000000000000000000000000", // no hook
+      ]);
+
+      const principal = parseUnits("5000", 6);
+      const yieldAmount = parseUnits("100", 6);
+      const totalAmount = principal + yieldAmount;
+
+      return {
+        settlement,
+        token,
+        lifiDiamond,
+        deployer,
+        depositor,
+        counterparty,
+        principal,
+        yieldAmount,
+        totalAmount,
+      };
+    }
+
+    it("should route counterparty payout through LI.FI diamond when lifiData is provided", async function () {
+      const { settlement, token, lifiDiamond, deployer, depositor, counterparty, principal, totalAmount } =
+        await networkHelpers.loadFixture(deployLiFiFixture);
+
+      await token.write.mint([deployer.account.address, totalAmount]);
+      await token.write.approve([settlement.address, totalAmount]);
+
+      // Encode a call to MockLiFiDiamond.bridgeTokens
+      const lifiData = encodeFunctionData({
+        abi: [
+          {
+            name: "bridgeTokens",
+            type: "function",
+            inputs: [
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+              { name: "receiver", type: "address" },
+              { name: "dstChainId", type: "uint256" },
+            ],
+            outputs: [],
+            stateMutability: "nonpayable",
+          },
+        ],
+        functionName: "bridgeTokens",
+        args: [
+          token.address,
+          totalAmount, // 100% yield to counterparty, full amount bridges
+          counterparty.account.address,
+          421614n, // Arbitrum Sepolia chain ID
+        ],
+      });
+
+      await settlement.write.settle([
+        1n,
+        depositor.account.address,
+        counterparty.account.address,
+        principal,
+        totalAmount,
+        100,
+        lifiData,
+      ]);
+
+      // LI.FI diamond should have received the counterparty payout
+      const diamondBalance = await token.read.balanceOf([lifiDiamond.address]);
+      assert.equal(diamondBalance, totalAmount);
+
+      // Counterparty should NOT have tokens directly (they were bridged)
+      const counterpartyBalance = await token.read.balanceOf([counterparty.account.address]);
+      assert.equal(counterpartyBalance, 0n);
+    });
+
+    it("should still pay depositor on same chain when LI.FI routes counterparty", async function () {
+      const { settlement, token, lifiDiamond, deployer, depositor, counterparty, principal, yieldAmount, totalAmount } =
+        await networkHelpers.loadFixture(deployLiFiFixture);
+
+      await token.write.mint([deployer.account.address, totalAmount]);
+      await token.write.approve([settlement.address, totalAmount]);
+
+      // 50% yield split — depositor should still get their share on same chain
+      const halfYield = yieldAmount / 2n;
+      const counterpartyPayout = principal + halfYield;
+
+      const lifiData = encodeFunctionData({
+        abi: [
+          {
+            name: "bridgeTokens",
+            type: "function",
+            inputs: [
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+              { name: "receiver", type: "address" },
+              { name: "dstChainId", type: "uint256" },
+            ],
+            outputs: [],
+            stateMutability: "nonpayable",
+          },
+        ],
+        functionName: "bridgeTokens",
+        args: [
+          token.address,
+          counterpartyPayout,
+          counterparty.account.address,
+          421614n,
+        ],
+      });
+
+      await settlement.write.settle([
+        1n,
+        depositor.account.address,
+        counterparty.account.address,
+        principal,
+        totalAmount,
+        50,
+        lifiData,
+      ]);
+
+      // Depositor gets their yield share directly
+      const depositorBalance = await token.read.balanceOf([depositor.account.address]);
+      assert.equal(depositorBalance, halfYield);
+
+      // LI.FI diamond has the counterparty payout
+      const diamondBalance = await token.read.balanceOf([lifiDiamond.address]);
+      assert.equal(diamondBalance, counterpartyPayout);
+    });
+
+    it("should revert if LI.FI call fails", async function () {
+      const { settlement, token, deployer, depositor, counterparty, principal, totalAmount } =
+        await networkHelpers.loadFixture(deployLiFiFixture);
+
+      await token.write.mint([deployer.account.address, totalAmount]);
+      await token.write.approve([settlement.address, totalAmount]);
+
+      // Bad calldata that will revert
+      const badLifiData = "0xdeadbeef";
+
+      await viem.assertions.revertWith(
+        settlement.write.settle([
+          1n,
+          depositor.account.address,
+          counterparty.account.address,
+          principal,
+          totalAmount,
+          100,
+          badLifiData,
+        ]),
+        "LI.FI bridge failed"
+      );
+    });
+  });
+
+  // ─── Hook Integration (Yield Swap) ──────────────────────────────
+
+  describe("settle — hook yield swap", function () {
+    async function deployHookFixture() {
+      const [deployer, depositor, counterparty] =
+        await viem.getWalletClients();
+
+      const usdc = await viem.deployContract("MockERC20", [
+        "USD Coin",
+        "USDC",
+        6n,
+      ]);
+      const weth = await viem.deployContract("MockERC20", [
+        "Wrapped Ether",
+        "WETH",
+        18n,
+      ]);
+
+      // Deploy settlement first (need its address for hook)
+      // We deploy with a temporary address then redeploy — or use deployer address
+      // Actually: deploy hook with settlement address, then deploy settlement with hook address
+      // Chicken-and-egg: use create2 or predict address. For testing: deploy settlement first with no hook, then set hook.
+
+      // Deploy settlement with no LI.FI, no hook initially
+      const settlement = await viem.deployContract("Settlement", [
+        usdc.address,
+        "0x0000000000000000000000000000000000000000", // no lifi
+        "0x0000000000000000000000000000000000000000", // no hook (set later)
+      ]);
+
+      // Deploy hook with settlement as authorized caller
+      const hook = await viem.deployContract("RestlessSettlementHook", [
+        usdc.address,
+        settlement.address,
+      ]);
+
+      // Set hook on settlement
+      await settlement.write.setHook([hook.address]);
+
+      // Configure swap rate: 1 USDC = 0.0005 WETH
+      await hook.write.setSwapRate([weth.address, parseUnits("0.0005", 18)]);
+
+      // Mint WETH to hook so it can fulfill swaps
+      await weth.write.mint([hook.address, parseUnits("100", 18)]);
+
+      const principal = parseUnits("5000", 6);
+      const yieldAmount = parseUnits("100", 6);
+      const totalAmount = principal + yieldAmount;
+
+      return {
+        settlement,
+        hook,
+        usdc,
+        weth,
+        deployer,
+        depositor,
+        counterparty,
+        principal,
+        yieldAmount,
+        totalAmount,
+      };
+    }
+
+    it("should route yield through hook when preferredToken is set", async function () {
+      const { settlement, usdc, weth, deployer, depositor, counterparty, principal, yieldAmount, totalAmount } =
+        await networkHelpers.loadFixture(deployHookFixture);
+
+      await usdc.write.mint([deployer.account.address, totalAmount]);
+      await usdc.write.approve([settlement.address, totalAmount]);
+
+      // settle with 100% yield to counterparty, preferred token = WETH
+      await settlement.write.settleWithHook([
+        1n,
+        depositor.account.address,
+        counterparty.account.address,
+        principal,
+        totalAmount,
+        100,
+        weth.address, // preferredToken
+      ]);
+
+      // Counterparty gets principal in USDC
+      const counterpartyUsdc = await usdc.read.balanceOf([counterparty.account.address]);
+      assert.equal(counterpartyUsdc, principal);
+
+      // Counterparty gets yield as WETH (100 USDC * 0.0005 WETH/USDC = 0.05 WETH)
+      const counterpartyWeth = await weth.read.balanceOf([counterparty.account.address]);
+      const expectedWeth = parseUnits("0.05", 18);
+      assert.equal(counterpartyWeth, expectedWeth);
+    });
+
+    it("should pay depositor yield share in USDC even when hook is used", async function () {
+      const { settlement, usdc, weth, deployer, depositor, counterparty, principal, yieldAmount, totalAmount } =
+        await networkHelpers.loadFixture(deployHookFixture);
+
+      await usdc.write.mint([deployer.account.address, totalAmount]);
+      await usdc.write.approve([settlement.address, totalAmount]);
+
+      const halfYield = yieldAmount / 2n;
+
+      // 50% yield split with hook
+      await settlement.write.settleWithHook([
+        1n,
+        depositor.account.address,
+        counterparty.account.address,
+        principal,
+        totalAmount,
+        50,
+        weth.address,
+      ]);
+
+      // Depositor gets their yield share in USDC
+      const depositorUsdc = await usdc.read.balanceOf([depositor.account.address]);
+      assert.equal(depositorUsdc, halfYield);
+
+      // Counterparty gets principal in USDC + yield as WETH
+      const counterpartyUsdc = await usdc.read.balanceOf([counterparty.account.address]);
+      assert.equal(counterpartyUsdc, principal);
+
+      // 50 USDC * 0.0005 = 0.025 WETH
+      const counterpartyWeth = await weth.read.balanceOf([counterparty.account.address]);
+      assert.equal(counterpartyWeth, parseUnits("0.025", 18));
+    });
+
+    it("should reject settleWithHook when hook is not configured", async function () {
+      const [deployer, depositor, counterparty] =
+        await viem.getWalletClients();
+
+      const usdc = await viem.deployContract("MockERC20", ["USD Coin", "USDC", 6n]);
+      const weth = await viem.deployContract("MockERC20", ["Wrapped Ether", "WETH", 18n]);
+
+      // Settlement with NO hook
+      const settlement = await viem.deployContract("Settlement", [
+        usdc.address,
+        "0x0000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000",
+      ]);
+
+      const principal = parseUnits("5000", 6);
+      const total = parseUnits("5100", 6);
+
+      await usdc.write.mint([deployer.account.address, total]);
+      await usdc.write.approve([settlement.address, total]);
+
+      await viem.assertions.revertWith(
+        settlement.write.settleWithHook([
+          1n,
+          depositor.account.address,
+          counterparty.account.address,
+          principal,
+          total,
+          100,
+          weth.address,
+        ]),
+        "Hook not configured"
+      );
+    });
+
+    it("should reject setHook from non-owner", async function () {
+      const [deployer, nonOwner] = await viem.getWalletClients();
+
+      const usdc = await viem.deployContract("MockERC20", ["USD Coin", "USDC", 6n]);
+
+      const settlement = await viem.deployContract("Settlement", [
+        usdc.address,
+        "0x0000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000",
+      ]);
+
+      const settlementAsNonOwner = await viem.getContractAt(
+        "Settlement",
+        settlement.address,
+        { client: { wallet: nonOwner } }
+      );
+
+      await viem.assertions.revertWith(
+        settlementAsNonOwner.write.setHook(["0x0000000000000000000000000000000000000001"]),
+        "Only owner"
+      );
     });
   });
 });

@@ -30,9 +30,11 @@ describe("Integration: Full Deal Lifecycle", function () {
       aUsdc.address,
     ]);
 
-    // Deploy real Settlement
+    // Deploy real Settlement (no LI.FI or hook for integration tests)
     const settlement = await viem.deployContract("Settlement", [
       usdc.address,
+      "0x0000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000",
     ]);
 
     // Deploy real AaveYieldAdapter (without escrow — set later)

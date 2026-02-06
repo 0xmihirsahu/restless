@@ -4,14 +4,15 @@
   "private": true,
   "description": "P2P escrow where locked funds earn yield in Aave — your escrow, never idle.",
   "workspaces": [
-    "packages/*"
+    "contracts",
+    "frontend"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=packages/web",
-    "build": "npm run build --workspace=packages/web",
-    "compile": "npm run compile --workspace=packages/contracts",
-    "test": "npm run test --workspace=packages/contracts",
-    "test:web": "npm run test --workspace=packages/web"
+    "dev": "pnpm --filter frontend dev",
+    "build": "pnpm --filter frontend build",
+    "compile": "pnpm --filter @restless/contracts compile",
+    "test": "pnpm --filter @restless/contracts test",
+    "test:web": "pnpm --filter frontend test"
   },
   "author": "Mihir Sahu",
   "license": "MIT"

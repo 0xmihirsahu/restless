@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const artifactsDir = join(__dirname, "..", "artifacts", "contracts");
-const outputDir = join(__dirname, "..", "..", "web", "src", "contracts");
+const outputDir = join(__dirname, "..", "..", "frontend", "src", "contracts");
 
 const contracts = [
   { name: "RestlessEscrow", path: "RestlessEscrow.sol/RestlessEscrow.json" },

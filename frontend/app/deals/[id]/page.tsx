@@ -10,6 +10,7 @@ import { useSettleDeal, useDisputeDeal, useCancelDeal, useClaimTimeout, useFundD
 import { getDealStatusLabel, getDealStatusColor } from "@/lib/contracts";
 import { YieldTicker } from "@/components/YieldTicker";
 import { CrossChainSettle } from "@/components/CrossChainSettle";
+import { StateChannelPanel } from "@/components/StateChannelPanel";
 
 function truncateAddress(addr: string) {
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -146,6 +147,19 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
         </div>
+
+        {/* State Channel (Yellow Network) — for funded/active deals */}
+        {deal.status === 1 && isParty && (
+          <div className="mb-8">
+            <StateChannelPanel
+              dealId={id}
+              counterparty={deal.counterparty as `0x${string}`}
+              depositor={deal.depositor as `0x${string}`}
+              amount={formatUnits(deal.amount, 6)}
+              isDepositor={isDepositor}
+            />
+          </div>
+        )}
 
         {/* Actions */}
         {isParty && (

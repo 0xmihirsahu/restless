@@ -124,6 +124,35 @@ contract RestlessEscrow is ReentrancyGuard, Pausable {
         emit DealDisputed(dealId, msg.sender);
     }
 
+    function settleDeal(uint256 dealId, bytes calldata lifiData) external nonReentrant whenNotPaused {
+        Deal storage deal = deals[dealId];
+        require(deal.id != 0, "Deal does not exist");
+        require(deal.status == DealStatus.Funded, "Deal not in Funded state");
+        require(
+            msg.sender == deal.depositor || msg.sender == deal.counterparty,
+            "Only deal parties can settle"
+        );
+
+        deal.status = DealStatus.Settled;
+
+        // Withdraw principal + yield from adapter
+        uint256 total = yieldAdapter.withdraw(dealId);
+
+        // Approve settlement to pull tokens and distribute
+        token.approve(address(settlement), total);
+        settlement.settle(
+            dealId,
+            deal.depositor,
+            deal.counterparty,
+            deal.amount,
+            total,
+            deal.yieldSplitCounterparty,
+            lifiData
+        );
+
+        emit DealSettled(dealId, total);
+    }
+
     function claimTimeout(uint256 dealId) external nonReentrant {
         Deal storage deal = deals[dealId];
         require(deal.id != 0, "Deal does not exist");

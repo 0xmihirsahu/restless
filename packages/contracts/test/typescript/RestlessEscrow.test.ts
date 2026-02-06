@@ -274,6 +274,123 @@ describe("RestlessEscrow", function () {
     });
   });
 
+  describe("settleDeal", function () {
+    it("should settle a funded deal and call settlement contract", async function () {
+      const { escrow, token, adapter, settlement, depositor, counterparty, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+      await escrowAsDepositor.write.fundDeal([1n]);
+
+      // Counterparty settles (work delivered)
+      const escrowAsCounterparty = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: counterparty } }
+      );
+
+      await escrowAsCounterparty.write.settleDeal([1n, "0x"]);
+
+      const deal = await escrow.read.getDeal([1n]);
+      assert.equal(deal.status, 2); // Settled
+
+      // MockSettlement should have recorded the call
+      const callCount = await settlement.read.getSettleCallCount();
+      assert.equal(callCount, 1n);
+    });
+
+    it("should allow depositor to settle", async function () {
+      const { escrow, depositor, counterparty, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+      await escrowAsDepositor.write.fundDeal([1n]);
+      await escrowAsDepositor.write.settleDeal([1n, "0x"]);
+
+      const deal = await escrow.read.getDeal([1n]);
+      assert.equal(deal.status, 2); // Settled
+    });
+
+    it("should reject settlement by stranger", async function () {
+      const { escrow, depositor, counterparty, stranger, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+      await escrowAsDepositor.write.fundDeal([1n]);
+
+      const escrowAsStranger = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: stranger } }
+      );
+
+      await viem.assertions.revertWith(
+        escrowAsStranger.write.settleDeal([1n, "0x"]),
+        "Only deal parties can settle"
+      );
+    });
+
+    it("should reject settlement of non-funded deal", async function () {
+      const { escrow, depositor, counterparty, amount, dealHash } =
+        await networkHelpers.loadFixture(deployFixture);
+
+      const escrowAsDepositor = await viem.getContractAt(
+        "RestlessEscrow",
+        escrow.address,
+        { client: { wallet: depositor } }
+      );
+
+      await escrowAsDepositor.write.createDeal([
+        counterparty.account.address,
+        amount,
+        100,
+        86400n,
+        dealHash,
+      ]);
+
+      await viem.assertions.revertWith(
+        escrowAsDepositor.write.settleDeal([1n, "0x"]),
+        "Deal not in Funded state"
+      );
+    });
+  });
+
   describe("claimTimeout", function () {
     it("should refund depositor after timeout", async function () {
       const { escrow, token, depositor, counterparty, amount, dealHash } =

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { network } from "hardhat";
 import { parseUnits, getAddress, keccak256, toHex } from "viem";
 
-const { viem, networkHelpers } = await network.connect();
+const { viem, networkHelpers, provider } = await network.connect();
 
 describe("RestlessEscrow", function () {
   async function deployFixture() {
@@ -296,7 +296,11 @@ describe("RestlessEscrow", function () {
       await escrowAsDepositor.write.disputeDeal([1n]);
 
       // Fast-forward past timeout
-      await networkHelpers.increaseTime(86401);
+      const publicClient = await viem.getPublicClient();
+      const block = await publicClient.getBlock();
+      const futureTimestamp = block.timestamp + 86401n;
+      await provider.request({ method: "evm_setNextBlockTimestamp", params: [Number(futureTimestamp)] });
+      await networkHelpers.mine();
 
       // Claim timeout
       await escrowAsDepositor.write.claimTimeout([1n]);

@@ -80,9 +80,13 @@ contract Settlement is ISettlement {
             if (lifiData.length > 0) {
                 // Cross-chain routing via LI.FI diamond
                 require(lifiDiamond != address(0), "LI.FI not configured");
+                uint256 balBefore = token.balanceOf(address(this));
                 token.approve(lifiDiamond, counterpartyPayout);
                 (bool success, ) = lifiDiamond.call(lifiData);
                 require(success, "LI.FI bridge failed");
+                uint256 balAfter = token.balanceOf(address(this));
+                require(balBefore - balAfter == counterpartyPayout, "LI.FI amount mismatch");
+                token.approve(lifiDiamond, 0);
             } else {
                 token.safeTransfer(counterparty, counterpartyPayout);
             }

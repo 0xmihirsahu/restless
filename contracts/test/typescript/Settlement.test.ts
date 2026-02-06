@@ -421,6 +421,159 @@ describe("Settlement", function () {
     });
   });
 
+  // ─── LI.FI Calldata Validation ──────────────────────────────────
+
+  describe("settle — LI.FI calldata validation", function () {
+    async function deployLiFiValidationFixture() {
+      const [deployer, depositor, counterparty] =
+        await viem.getWalletClients();
+
+      const token = await viem.deployContract("MockERC20", [
+        "USD Coin",
+        "USDC",
+        6n,
+      ]);
+
+      // Deploy no-op LI.FI diamond (accepts calls but doesn't pull tokens)
+      const badDiamond = await viem.deployContract("MockLiFiDiamondNoOp", []);
+
+      const settlement = await viem.deployContract("Settlement", [
+        token.address,
+        badDiamond.address,
+        "0x0000000000000000000000000000000000000000",
+      ]);
+
+      const principal = parseUnits("5000", 6);
+      const yieldAmount = parseUnits("100", 6);
+      const totalAmount = principal + yieldAmount;
+
+      return {
+        settlement,
+        token,
+        badDiamond,
+        deployer,
+        depositor,
+        counterparty,
+        principal,
+        yieldAmount,
+        totalAmount,
+      };
+    }
+
+    it("should revert when LI.FI diamond does not consume tokens", async function () {
+      const { settlement, token, deployer, depositor, counterparty, principal, totalAmount } =
+        await networkHelpers.loadFixture(deployLiFiValidationFixture);
+
+      await token.write.mint([deployer.account.address, totalAmount]);
+      await token.write.approve([settlement.address, totalAmount]);
+
+      // Encode a call that the no-op diamond will accept but won't pull tokens
+      const lifiData = encodeFunctionData({
+        abi: [
+          {
+            name: "bridgeTokens",
+            type: "function",
+            inputs: [
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+              { name: "receiver", type: "address" },
+              { name: "dstChainId", type: "uint256" },
+            ],
+            outputs: [],
+            stateMutability: "nonpayable",
+          },
+        ],
+        functionName: "bridgeTokens",
+        args: [
+          token.address,
+          totalAmount,
+          counterparty.account.address,
+          421614n,
+        ],
+      });
+
+      await viem.assertions.revertWith(
+        settlement.write.settle([
+          1n,
+          depositor.account.address,
+          counterparty.account.address,
+          principal,
+          totalAmount,
+          100,
+          lifiData,
+        ]),
+        "LI.FI amount mismatch"
+      );
+    });
+
+    it("should reset LI.FI approval after successful bridge", async function () {
+      const [deployer, depositor, counterparty] =
+        await viem.getWalletClients();
+
+      const token = await viem.deployContract("MockERC20", [
+        "USD Coin",
+        "USDC",
+        6n,
+      ]);
+
+      // Use the real mock diamond that does pull tokens
+      const lifiDiamond = await viem.deployContract("MockLiFiDiamond", []);
+
+      const settlement = await viem.deployContract("Settlement", [
+        token.address,
+        lifiDiamond.address,
+        "0x0000000000000000000000000000000000000000",
+      ]);
+
+      const principal = parseUnits("5000", 6);
+      const totalAmount = parseUnits("5100", 6);
+
+      await token.write.mint([deployer.account.address, totalAmount]);
+      await token.write.approve([settlement.address, totalAmount]);
+
+      const lifiData = encodeFunctionData({
+        abi: [
+          {
+            name: "bridgeTokens",
+            type: "function",
+            inputs: [
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+              { name: "receiver", type: "address" },
+              { name: "dstChainId", type: "uint256" },
+            ],
+            outputs: [],
+            stateMutability: "nonpayable",
+          },
+        ],
+        functionName: "bridgeTokens",
+        args: [
+          token.address,
+          totalAmount,
+          counterparty.account.address,
+          421614n,
+        ],
+      });
+
+      await settlement.write.settle([
+        1n,
+        depositor.account.address,
+        counterparty.account.address,
+        principal,
+        totalAmount,
+        100,
+        lifiData,
+      ]);
+
+      // After settlement, the LI.FI diamond should have zero remaining approval
+      const remainingAllowance = await token.read.allowance([
+        settlement.address,
+        lifiDiamond.address,
+      ]);
+      assert.equal(remainingAllowance, 0n);
+    });
+  });
+
   // ─── Hook Integration (Yield Swap) ──────────────────────────────
 
   describe("settle — hook yield swap", function () {

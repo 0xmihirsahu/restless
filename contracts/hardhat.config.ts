@@ -14,8 +14,8 @@ if (process.env.SEPOLIA_RPC_URL) {
     type: "http",
     chainType: "l1",
     url: process.env.SEPOLIA_RPC_URL,
-    accounts: process.env.DEPLOYER_PRIVATE_KEY
-      ? [process.env.DEPLOYER_PRIVATE_KEY]
+    accounts: process.env.SEPOLIA_PRIVATE_KEY
+      ? [process.env.SEPOLIA_PRIVATE_KEY]
       : [],
   };
 }
@@ -25,8 +25,8 @@ if (process.env.ARB_SEPOLIA_RPC_URL) {
     type: "http",
     chainType: "l1",
     url: process.env.ARB_SEPOLIA_RPC_URL,
-    accounts: process.env.DEPLOYER_PRIVATE_KEY
-      ? [process.env.DEPLOYER_PRIVATE_KEY]
+    accounts: process.env.SEPOLIA_PRIVATE_KEY
+      ? [process.env.SEPOLIA_PRIVATE_KEY]
       : [],
   };
 }

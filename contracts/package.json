@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@aave/core-v3": "^1.19.3",
+    "@nomicfoundation/hardhat-ignition": "^3.0.7",
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
     "@openzeppelin/contracts": "^5.2.0",
     "@types/node": "^25.2.1",

@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useAccount } from "wagmi";
 import { formatUnits } from "viem";
 import { useDealCount, useDeals } from "@/hooks/useDeal";
@@ -17,7 +18,6 @@ export default function DealsPage() {
 
   const isLoading = countLoading || dealsLoading;
 
-  // Filter to deals involving connected wallet
   const myDeals = deals?.filter(
     (d) =>
       d.depositor.toLowerCase() === address?.toLowerCase() ||
@@ -27,39 +27,41 @@ export default function DealsPage() {
   return (
     <main className="min-h-[calc(100vh-65px)]">
       <div className="max-w-5xl mx-auto px-6 py-12">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-10 animate-fade-up">
           <div>
-            <h1 className="text-xl font-medium text-foreground mb-1">my deals</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-1 font-display tracking-tight">my deals</h1>
             <p className="text-sm text-muted-foreground">
               {address ? "deals where you are depositor or counterparty" : "connect wallet to see your deals"}
             </p>
           </div>
           <Link
             href="/deals/new"
-            className="px-4 py-2 text-sm bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+            className="px-5 py-2.5 text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
           >
             new deal
           </Link>
         </div>
 
         {!address && (
-          <div className="border border-border p-8 text-center">
+          <div className="border border-border p-8 text-center animate-fade-up">
             <p className="text-sm text-muted-foreground">connect your wallet to view deals</p>
           </div>
         )}
 
         {address && isLoading && (
-          <div className="border border-border p-8 text-center">
+          <div className="border border-border p-12 text-center flex flex-col items-center animate-fade-up">
+            <Image src="/brand/loading-spinner.svg" alt="" width={48} height={48} className="mb-4 animate-spin" />
             <p className="text-sm text-muted-foreground">loading deals...</p>
           </div>
         )}
 
         {address && !isLoading && (!myDeals || myDeals.length === 0) && (
-          <div className="border border-border p-8 text-center">
+          <div className="border border-border p-10 text-center flex flex-col items-center animate-fade-up">
+            <Image src="/brand/empty-state.svg" alt="No deals" width={200} height={175} className="mb-6 opacity-80" />
             <p className="text-sm text-muted-foreground mb-4">no deals yet</p>
             <Link
               href="/deals/new"
-              className="text-sm text-primary hover:underline"
+              className="text-sm font-medium text-primary hover:underline"
             >
               create your first deal
             </Link>
@@ -68,23 +70,24 @@ export default function DealsPage() {
 
         {myDeals && myDeals.length > 0 && (
           <div className="space-y-3">
-            {myDeals.map((deal) => {
+            {myDeals.map((deal, i) => {
               const isDepositor = deal.depositor.toLowerCase() === address?.toLowerCase();
               return (
                 <Link
                   key={deal.id.toString()}
                   href={`/deals/${deal.id.toString()}`}
-                  className="block border border-border p-4 hover:border-muted-foreground transition-colors"
+                  className="block border border-border p-5 hover:border-primary/30 transition-colors animate-fade-up group"
+                  style={{ animationDelay: `${i * 0.05}s` }}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground">#{deal.id.toString()}</span>
+                      <span className="text-xs font-mono text-muted-foreground">#{deal.id.toString()}</span>
                       <span className={`text-xs font-medium ${getDealStatusColor(deal.status)}`}>
                         {getDealStatusLabel(deal.status).toLowerCase()}
                       </span>
                     </div>
-                    <span className="text-sm font-medium text-foreground">
-                      {formatUnits(deal.amount, 6)} USDC
+                    <span className="text-sm font-bold font-mono text-foreground">
+                      {formatUnits(deal.amount, 6)} <span className="text-muted-foreground font-normal">USDC</span>
                     </span>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -96,7 +99,7 @@ export default function DealsPage() {
                         <EnsName address={deal.counterparty as `0x${string}`} />
                       )}
                     </span>
-                    <span>yield split: {deal.yieldSplitCounterparty}% to counterparty</span>
+                    <span className="text-accent">yield: {deal.yieldSplitCounterparty}% to counterparty</span>
                   </div>
                 </Link>
               );

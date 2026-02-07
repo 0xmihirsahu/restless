@@ -26,12 +26,10 @@ export default function NewDealPage() {
   const { approve, isPending: approvePending, isSuccess: approveSuccess } = useApproveUSDC();
   const { fundDeal, isPending: fundPending, isSuccess: fundSuccess } = useFundDeal();
 
-  // ENS preferences: read counterparty's preferred deal settings from their ENS text records
   const counterpartyAddr = isAddress(counterparty) ? counterparty as `0x${string}` : undefined;
   const prefs = useEnsPreferences(counterpartyAddr);
   const appliedPrefsFor = useRef<string | null>(null);
 
-  // Auto-fill form fields from counterparty's ENS text records (once per address)
   useEffect(() => {
     if (!prefs.hasPreferences || !counterpartyAddr) return;
     if (appliedPrefsFor.current === counterpartyAddr) return;
@@ -79,7 +77,6 @@ export default function NewDealPage() {
     fundDeal(createdDealId);
   }
 
-  // Step progression
   useEffect(() => {
     if (approveSuccess && step === "approve") {
       setStep("create");
@@ -102,7 +99,7 @@ export default function NewDealPage() {
     return (
       <main className="min-h-[calc(100vh-65px)]">
         <div className="max-w-2xl mx-auto px-6 py-12">
-          <div className="border border-border p-8 text-center">
+          <div className="border border-border p-8 text-center animate-fade-up">
             <p className="text-sm text-muted-foreground">connect your wallet to create a deal</p>
           </div>
         </div>
@@ -113,25 +110,24 @@ export default function NewDealPage() {
   return (
     <main className="min-h-[calc(100vh-65px)]">
       <div className="max-w-2xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-xl font-medium text-foreground mb-1">create a deal</h1>
+        <div className="mb-10 animate-fade-up">
+          <h1 className="text-2xl font-bold text-foreground mb-1 font-display tracking-tight">create a deal</h1>
           <p className="text-sm text-muted-foreground">
             set terms, fund with USDC, and start earning yield immediately
           </p>
         </div>
 
         {step === "form" && (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
             <EnsAddressInput
               value={counterparty}
               onChange={handleCounterpartyChange}
               selfAddress={address}
             />
 
-            {/* ENS Preferences Banner */}
             {prefs.hasPreferences && prefs.ensName && (
-              <div className="border border-green-500/30 bg-green-500/5 p-3 space-y-1">
-                <div className="text-xs text-green-500 font-medium">
+              <div className="border border-emerald/30 bg-emerald/5 p-3 space-y-1">
+                <div className="text-xs text-emerald font-medium">
                   deal preferences loaded from {prefs.ensName}
                 </div>
                 <div className="text-xs text-muted-foreground space-y-0.5">
@@ -152,7 +148,7 @@ export default function NewDealPage() {
             )}
 
             <div>
-              <label htmlFor="amount" className="block text-sm text-foreground mb-1.5">
+              <label htmlFor="amount" className="block text-sm font-medium text-foreground mb-1.5">
                 amount (USDC)
               </label>
               <input
@@ -163,13 +159,13 @@ export default function NewDealPage() {
                 placeholder="1000.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-background border border-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                className="w-full px-3 py-2.5 text-sm bg-background border border-input text-foreground placeholder:text-muted-foreground font-mono"
               />
             </div>
 
             <div>
-              <label htmlFor="yieldSplit" className="block text-sm text-foreground mb-1.5">
-                yield split to counterparty: {yieldSplit}%
+              <label htmlFor="yieldSplit" className="block text-sm font-medium text-foreground mb-1.5">
+                yield split to counterparty: <span className="text-accent font-bold">{yieldSplit}%</span>
               </label>
               <input
                 id="yieldSplit"
@@ -178,7 +174,7 @@ export default function NewDealPage() {
                 max="100"
                 value={yieldSplit}
                 onChange={(e) => setYieldSplit(Number(e.target.value))}
-                className="w-full accent-primary"
+                className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
                 <span>0% (all yield to you)</span>
@@ -187,8 +183,8 @@ export default function NewDealPage() {
             </div>
 
             <div>
-              <label htmlFor="timeout" className="block text-sm text-foreground mb-1.5">
-                dispute timeout: {timeoutDays} day{timeoutDays !== 1 ? "s" : ""}
+              <label htmlFor="timeout" className="block text-sm font-medium text-foreground mb-1.5">
+                dispute timeout: <span className="font-bold">{timeoutDays} day{timeoutDays !== 1 ? "s" : ""}</span>
               </label>
               <input
                 id="timeout"
@@ -197,7 +193,7 @@ export default function NewDealPage() {
                 max="30"
                 value={timeoutDays}
                 onChange={(e) => setTimeoutDays(Number(e.target.value))}
-                className="w-full accent-primary"
+                className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
                 <span>1 day</span>
@@ -206,7 +202,7 @@ export default function NewDealPage() {
             </div>
 
             <div>
-              <label htmlFor="terms" className="block text-sm text-foreground mb-1.5">
+              <label htmlFor="terms" className="block text-sm font-medium text-foreground mb-1.5">
                 deal terms / description
               </label>
               <textarea
@@ -215,7 +211,7 @@ export default function NewDealPage() {
                 value={dealTerms}
                 onChange={(e) => setDealTerms(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 text-sm bg-background border border-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary resize-none"
+                className="w-full px-3 py-2.5 text-sm bg-background border border-input text-foreground placeholder:text-muted-foreground resize-none"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 this will be hashed on-chain as the deal commitment
@@ -225,7 +221,7 @@ export default function NewDealPage() {
             <button
               type="submit"
               disabled={!isValidForm}
-              className="w-full px-4 py-2.5 text-sm bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
             >
               continue to funding
             </button>
@@ -233,9 +229,8 @@ export default function NewDealPage() {
         )}
 
         {step !== "form" && (
-          <div className="space-y-4">
-            {/* Summary */}
-            <div className="border border-border p-4 space-y-2 text-sm">
+          <div className="space-y-4 animate-fade-up">
+            <div className="border border-border p-5 space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">counterparty</span>
                 <span className="text-foreground font-mono text-xs">
@@ -248,11 +243,11 @@ export default function NewDealPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">amount</span>
-                <span className="text-foreground">{amount} USDC</span>
+                <span className="text-foreground font-mono">{amount} USDC</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">yield split</span>
-                <span className="text-foreground">{yieldSplit}% to counterparty</span>
+                <span className="text-accent font-medium">{yieldSplit}% to counterparty</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">timeout</span>
@@ -260,7 +255,6 @@ export default function NewDealPage() {
               </div>
             </div>
 
-            {/* Steps */}
             <div className="space-y-3">
               <StepButton
                 label="1. approve USDC"
@@ -322,7 +316,7 @@ function StepButton({
       disabled={!active || loading}
       className={`w-full text-left border p-4 transition-colors ${
         done
-          ? "border-green-500/30 bg-green-500/5"
+          ? "border-emerald/30 bg-emerald/5"
           : active
           ? "border-primary cursor-pointer hover:bg-primary/5"
           : "border-border opacity-40 cursor-not-allowed"
@@ -333,7 +327,7 @@ function StepButton({
           <div className="text-sm font-medium text-foreground">{label}</div>
           <div className="text-xs text-muted-foreground">{description}</div>
         </div>
-        {done && <span className="text-xs text-green-500">done</span>}
+        {done && <span className="text-xs font-medium text-emerald">done</span>}
         {loading && <span className="text-xs text-primary animate-pulse">confirming...</span>}
       </div>
     </button>

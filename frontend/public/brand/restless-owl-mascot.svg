@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Amber glow filter for the open eye -->
+    <filter id="amberGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="1 0 0 0 0
+                0.6 0 0 0 0
+                0 0 0 0 0
+                0 0 0 0.6 0" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Subtle blue glow for open eye -->
+    <filter id="blueGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Circular clip for avatar use -->
+    <clipPath id="circleClip">
+      <circle cx="256" cy="256" r="256"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="0" fill="#0F172A"/>
+
+  <g clip-path="url(#circleClip)">
+    <!-- Background circle -->
+    <circle cx="256" cy="256" r="256" fill="#0F172A"/>
+
+    <!-- === SHIELD / VAULT BASE === -->
+    <!-- Shield shape beneath the owl -->
+    <path d="
+      M 256 420
+      L 170 360
+      L 160 310
+      L 165 280
+      L 256 260
+      L 347 280
+      L 352 310
+      L 342 360
+      Z
+    " fill="#151E2E" stroke="#1E293B" stroke-width="2"/>
+    <!-- Shield inner accent line -->
+    <path d="
+      M 256 400
+      L 190 352
+      L 182 312
+      L 186 290
+      L 256 275
+      L 326 290
+      L 330 312
+      L 322 352
+      Z
+    " fill="none" stroke="#2A3A52" stroke-width="1.5"/>
+    <!-- Keyhole / vault detail on shield -->
+    <circle cx="256" cy="330" r="10" fill="#2A3A52"/>
+    <rect x="252" y="335" width="8" height="16" rx="2" fill="#2A3A52"/>
+
+    <!-- === OWL BODY === -->
+    <!-- Main body - large geometric shape -->
+    <path d="
+      M 256 120
+      L 340 180
+      L 360 200
+      L 370 250
+      L 355 300
+      L 310 330
+      L 256 340
+      L 202 330
+      L 157 300
+      L 142 250
+      L 152 200
+      L 172 180
+      Z
+    " fill="#1E293B"/>
+
+    <!-- Chest / belly lighter area -->
+    <path d="
+      M 256 200
+      L 305 230
+      L 310 270
+      L 290 310
+      L 256 320
+      L 222 310
+      L 202 270
+      L 207 230
+      Z
+    " fill="#263349"/>
+
+    <!-- === HEAD SHAPE === -->
+    <!-- Head - overlapping geometric polygon -->
+    <path d="
+      M 256 100
+      L 330 155
+      L 345 195
+      L 340 235
+      L 310 260
+      L 256 270
+      L 202 260
+      L 172 235
+      L 167 195
+      L 182 155
+      Z
+    " fill="#1E293B"/>
+
+    <!-- === EAR TUFTS === -->
+    <!-- Left ear tuft -->
+    <polygon points="185,145 165,85 200,130" fill="#1E293B"/>
+    <polygon points="190,140 175,95 205,130" fill="#263349"/>
+    <!-- Right ear tuft -->
+    <polygon points="327,145 347,85 312,130" fill="#1E293B"/>
+    <polygon points="322,140 337,95 307,130" fill="#263349"/>
+
+    <!-- === FACIAL DISC === -->
+    <!-- Left facial disc -->
+    <path d="
+      M 215 165
+      C 190 175, 178 200, 185 225
+      C 192 250, 215 260, 235 255
+      C 255 250, 255 235, 250 215
+      C 245 185, 235 165, 215 165
+      Z
+    " fill="#263349"/>
+    <!-- Right facial disc -->
+    <path d="
+      M 297 165
+      C 322 175, 334 200, 327 225
+      C 320 250, 297 260, 277 255
+      C 257 250, 257 235, 262 215
+      C 267 185, 277 165, 297 165
+      Z
+    " fill="#263349"/>
+
+    <!-- === BEAK === -->
+    <polygon points="256,228 246,245 256,260 266,245" fill="#F59E0B"/>
+    <polygon points="256,228 246,245 256,248 266,245" fill="#FBBF24"/>
+
+    <!-- === EYES === -->
+
+    <!-- LEFT EYE - CLOSED (sleeping) -->
+    <!-- Eye socket -->
+    <circle cx="215" cy="205" r="28" fill="#151E2E"/>
+    <!-- Closed eye line -->
+    <path d="M 195 205 Q 205 215 215 215 Q 225 215 235 205" 
+          stroke="#3B82F6" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <!-- Small lashes -->
+    <line x1="200" y1="203" x2="197" y2="208" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+    <line x1="230" y1="203" x2="233" y2="208" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+
+    <!-- RIGHT EYE - OPEN (vigilant, never sleeps) -->
+    <!-- Amber glow ring -->
+    <circle cx="297" cy="205" r="34" fill="none" stroke="#F59E0B" stroke-width="3" opacity="0.25" filter="url(#amberGlow)"/>
+    <circle cx="297" cy="205" r="30" fill="none" stroke="#F59E0B" stroke-width="1.5" opacity="0.15"/>
+    <!-- Eye socket -->
+    <circle cx="297" cy="205" r="28" fill="#151E2E"/>
+    <!-- Outer iris ring -->
+    <circle cx="297" cy="205" r="22" fill="#1A3A6E"/>
+    <!-- Iris -->
+    <circle cx="297" cy="205" r="18" fill="#3B82F6" filter="url(#blueGlow)"/>
+    <!-- Inner iris detail -->
+    <circle cx="297" cy="205" r="12" fill="#2563EB"/>
+    <!-- Pupil -->
+    <circle cx="297" cy="205" r="7" fill="#0F172A"/>
+    <!-- Highlight -->
+    <circle cx="303" cy="198" r="4" fill="white" opacity="0.7"/>
+    <circle cx="292" cy="210" r="2" fill="white" opacity="0.4"/>
+
+    <!-- === WING DETAILS === -->
+    <!-- Left wing feather lines -->
+    <line x1="160" y1="230" x2="200" y2="285" stroke="#2A3A52" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="155" y1="245" x2="195" y2="300" stroke="#2A3A52" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="152" y1="260" x2="192" y2="310" stroke="#2A3A52" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Right wing feather lines -->
+    <line x1="352" y1="230" x2="312" y2="285" stroke="#2A3A52" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="357" y1="245" x2="317" y2="300" stroke="#2A3A52" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="360" y1="260" x2="320" y2="310" stroke="#2A3A52" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- === CHEST FEATHER PATTERN (geometric) === -->
+    <!-- V-shaped chevron feather marks -->
+    <polyline points="235,275 256,285 277,275" fill="none" stroke="#2A3A52" stroke-width="1.2"/>
+    <polyline points="230,290 256,300 282,290" fill="none" stroke="#2A3A52" stroke-width="1.2"/>
+    <polyline points="233,305 256,315 279,305" fill="none" stroke="#2A3A52" stroke-width="1.2"/>
+
+    <!-- === SUBTLE FEET on shield === -->
+    <!-- Left talon -->
+    <path d="M 230 340 L 225 355 L 220 350" stroke="#2A3A52" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M 235 340 L 230 358 L 225 353" stroke="#2A3A52" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- Right talon -->
+    <path d="M 282 340 L 287 355 L 292 350" stroke="#2A3A52" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M 277 340 L 282 358 L 287 353" stroke="#2A3A52" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Outer circle border for avatar framing -->
+  <circle cx="256" cy="256" r="253" fill="none" stroke="#1E293B" stroke-width="3"/>
+</svg>

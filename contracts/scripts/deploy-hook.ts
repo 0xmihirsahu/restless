@@ -53,13 +53,14 @@ async function main() {
   );
   const bytecode = artifact.default.bytecode.object as `0x${string}`;
 
-  // Encode constructor args: (IPoolManager, address, address)
+  // Encode constructor args: (IPoolManager, address inputToken, address settlement, address owner)
   const constructorArgs = encodeAbiParameters(
-    parseAbiParameters("address, address, address"),
+    parseAbiParameters("address, address, address, address"),
     [
       getAddress(poolManagerAddress),
       getAddress(usdcAddress),
       getAddress(settlementAddress),
+      deployer.account.address,
     ]
   );
 
@@ -113,11 +114,20 @@ async function main() {
   });
   console.log("Deploy tx:", txHash, "status:", receipt.status);
 
-  // Verify deployed address
-  const code = await publicClient.getCode({ address: hookAddress });
+  // Verify deployed address (retry — Base Sepolia RPC can be slow to index)
+  let code: string | undefined;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    code = await publicClient.getCode({ address: hookAddress });
+    if (code && code !== "0x") break;
+    console.log(`  Waiting for RPC to index hook (attempt ${attempt + 1}/10)...`);
+    await new Promise((r) => setTimeout(r, 3000));
+  }
   if (!code || code === "0x") {
-    console.error("Hook not deployed at expected address!");
-    process.exit(1);
+    console.error("Hook not indexed yet. It was likely deployed — check explorer:");
+    console.error(`  https://sepolia.basescan.org/address/${hookAddress}`);
+    console.log("\nHook address:", hookAddress);
+    console.log("Run setHook manually after confirming on explorer.");
+    process.exit(0);
   }
   console.log("Hook deployed at:", hookAddress);
 

@@ -61,14 +61,16 @@ contract RestlessSettlementHook is BaseHook, IUnlockCallback, IRestlessSettlemen
     constructor(
         IPoolManager _poolManager,
         address _inputToken,
-        address _settlementAddress
+        address _settlementAddress,
+        address _owner
     ) BaseHook(_poolManager) {
         require(_inputToken != address(0), "Invalid input token");
         require(_settlementAddress != address(0), "Invalid settlement");
+        require(_owner != address(0), "Invalid owner");
 
         inputToken = _inputToken;
         settlementAddress = _settlementAddress;
-        owner = msg.sender;
+        owner = _owner;
     }
 
     // ─── v4 Hook Permissions ──────────────────────────────────────

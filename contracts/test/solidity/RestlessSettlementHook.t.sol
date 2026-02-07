@@ -39,14 +39,15 @@ contract RestlessSettlementHookTest is Test, Deployers {
             address(this),
             flags,
             type(RestlessSettlementHook).creationCode,
-            abi.encode(manager, inputToken, address(this))
+            abi.encode(manager, inputToken, address(this), address(this))
         );
 
         // Deploy hook at the mined address (constructor validates address bits)
         hook = new RestlessSettlementHook{salt: salt}(
             manager,
             inputToken,
-            address(this) // this test contract acts as Settlement
+            address(this), // this test contract acts as Settlement
+            address(this)  // this test contract is the owner
         );
         assertEq(address(hook), hookAddr);
 

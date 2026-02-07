@@ -37,9 +37,9 @@ Restless auto-deposits escrowed USDC into Aave V3 to earn yield while parties ne
                       └───────────────────┘
 ```
 
-## Prize Track Integrations
+## Integrations
 
-### Yellow Network — State Channels ($15k track)
+### Yellow Network — State Channels
 
 Off-chain deal negotiation via Nitrolite SDK. Both parties connect to ClearNode via WebSocket, exchange gasless messages (confirmations, milestones, chat), and close the session to trigger on-chain settlement.
 
@@ -50,7 +50,7 @@ Off-chain deal negotiation via Nitrolite SDK. Both parties connect to ClearNode 
 
 **Files:** `frontend/lib/yellow.ts`, `frontend/hooks/useYellow.ts`, `frontend/components/StateChannelPanel.tsx`
 
-### Uniswap v4 — Settlement Hook ($5k-$10k track)
+### Uniswap v4 — Settlement Hook
 
 Real v4 `BaseHook` that auto-swaps yield to the recipient's preferred token on settlement. Uses the `unlock → swap → settle/take` pattern.
 
@@ -62,7 +62,7 @@ Real v4 `BaseHook` that auto-swaps yield to the recipient's preferred token on s
 
 **Files:** `contracts/contracts/RestlessSettlementHook.sol`, `contracts/test/solidity/RestlessSettlementHook.t.sol`
 
-### LI.FI — Cross-Chain Settlement ($2.5k-$6k track)
+### LI.FI — Cross-Chain Settlement
 
 Deposit on one chain, counterparty receives on another. LI.FI SDK fetches optimal bridge routes; Settlement.sol calls the LI.FI Diamond with the quoted calldata.
 
@@ -73,13 +73,13 @@ Deposit on one chain, counterparty receives on another. LI.FI SDK fetches optima
 
 **Files:** `frontend/lib/lifi.ts`, `frontend/hooks/useLifiQuote.ts`, `frontend/components/CrossChainSettle.tsx`, `contracts/contracts/Settlement.sol`
 
-### ENS — Identity & Preferences ($3.5k-$5k track)
+### ENS — Identity & Preferences
 
 Human-readable names throughout the app. ENS text records as a deal preference layer — counterparties advertise their preferred yield split, timeout, chain, and token via ENS records.
 
 - Address → ENS name resolution with avatar display
 - ENS name input: type `vitalik.eth` instead of `0x...`
-- **Creative:** ENS text records auto-fill deal preferences:
+- ENS text records auto-fill deal preferences:
   - `com.restless.yield-split` — preferred yield split %
   - `com.restless.chain` — preferred settlement chain ID
   - `com.restless.token` — preferred payout token

@@ -40,7 +40,7 @@ export function useDeal(dealId: bigint | undefined) {
 }
 
 export function useDealCount() {
-  const { data, isLoading, error } = useReadContract({
+  const { data, isLoading, error, refetch } = useReadContract({
     address: CONTRACTS.escrow,
     abi: restlessEscrowAbi,
     functionName: "dealCount",
@@ -53,6 +53,7 @@ export function useDealCount() {
     dealCount: data as bigint | undefined,
     isLoading,
     error,
+    refetch,
   };
 }
 

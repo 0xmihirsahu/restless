@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { isAddress, parseUnits } from "viem";
 import { useCreateDeal, useApproveUSDC, useFundDeal } from "@/hooks/useEscrowWrite";
-import { CONTRACTS } from "@/lib/contracts";
 import { EnsAddressInput } from "@/components/EnsAddressInput";
 import { EnsName } from "@/components/EnsName";
 import { useEnsPreferences } from "@/hooks/useEnsPreferences";
@@ -23,7 +22,7 @@ export default function NewDealPage() {
   const [dealTerms, setDealTerms] = useState("");
   const [step, setStep] = useState<"form" | "approve" | "create" | "fund">("form");
 
-  const { createDeal, isPending: createPending, isSuccess: createSuccess } = useCreateDeal();
+  const { createDeal, isPending: createPending, isSuccess: createSuccess, createdDealId } = useCreateDeal();
   const { approve, isPending: approvePending, isSuccess: approveSuccess } = useApproveUSDC();
   const { fundDeal, isPending: fundPending, isSuccess: fundSuccess } = useFundDeal();
 
@@ -76,21 +75,28 @@ export default function NewDealPage() {
   }
 
   function handleFund() {
-    // Deal ID is dealCount at time of creation — for simplicity, fund deal #1
-    // In production, we'd read the emitted event to get the deal ID
-    fundDeal(1n);
+    if (createdDealId === null) return;
+    fundDeal(createdDealId);
   }
 
   // Step progression
-  if (approveSuccess && step === "approve") {
-    setStep("create");
-  }
-  if (createSuccess && step === "create") {
-    setStep("fund");
-  }
-  if (fundSuccess && step === "fund") {
-    router.push("/deals");
-  }
+  useEffect(() => {
+    if (approveSuccess && step === "approve") {
+      setStep("create");
+    }
+  }, [approveSuccess, step]);
+
+  useEffect(() => {
+    if (createSuccess && createdDealId !== null && step === "create") {
+      setStep("fund");
+    }
+  }, [createSuccess, createdDealId, step]);
+
+  useEffect(() => {
+    if (fundSuccess && step === "fund") {
+      router.push("/deals");
+    }
+  }, [fundSuccess, step, router]);
 
   if (!isConnected) {
     return (

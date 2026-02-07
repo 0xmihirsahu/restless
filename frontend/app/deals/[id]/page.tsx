@@ -2,11 +2,11 @@
 
 export const dynamic = "force-dynamic";
 
-import { use } from "react";
+import { use, useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { formatUnits } from "viem";
 import { useDeal } from "@/hooks/useDeal";
-import { useSettleDeal, useDisputeDeal, useCancelDeal, useClaimTimeout, useFundDeal } from "@/hooks/useEscrowWrite";
+import { useSettleDeal, useSettleDealWithHook, useDisputeDeal, useCancelDeal, useClaimTimeout, useFundDeal, useApproveUSDC } from "@/hooks/useEscrowWrite";
 import { getDealStatusLabel, getDealStatusColor } from "@/lib/contracts";
 import { YieldTicker } from "@/components/YieldTicker";
 import { CrossChainSettle } from "@/components/CrossChainSettle";
@@ -29,10 +29,17 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const { deal, isLoading, refetch } = useDeal(dealId);
 
   const { settleDeal, isPending: settlePending } = useSettleDeal();
+  const { settleDealWithHook, isPending: hookPending } = useSettleDealWithHook();
   const { disputeDeal, isPending: disputePending } = useDisputeDeal();
   const { cancelDeal, isPending: cancelPending } = useCancelDeal();
   const { claimTimeout, isPending: claimPending } = useClaimTimeout();
   const { fundDeal, isPending: fundPending } = useFundDeal();
+  const { approve, isPending: approvePending, isSuccess: approveSuccess } = useApproveUSDC();
+  const [approvedForFund, setApprovedForFund] = useState(false);
+
+  useEffect(() => {
+    if (approveSuccess) setApprovedForFund(true);
+  }, [approveSuccess]);
 
   if (isLoading) {
     return (
@@ -169,7 +176,16 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         {/* Actions */}
         {isParty && (
           <div className="space-y-3">
-            {canFund && (
+            {canFund && !approvedForFund && (
+              <button
+                onClick={() => { approve(deal.amount); }}
+                disabled={approvePending}
+                className="w-full px-4 py-2.5 text-sm bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
+              >
+                {approvePending ? "confirming..." : "approve USDC"}
+              </button>
+            )}
+            {canFund && approvedForFund && (
               <button
                 onClick={() => { fundDeal(dealId); }}
                 disabled={fundPending}
@@ -187,7 +203,11 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                   settleDeal(dealId, lifiData);
                   refetch();
                 }}
-                isPending={settlePending}
+                onSettleWithHook={(preferredToken) => {
+                  settleDealWithHook(dealId, preferredToken);
+                  refetch();
+                }}
+                isPending={settlePending || hookPending}
               />
             )}
             {canDispute && (

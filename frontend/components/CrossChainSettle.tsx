@@ -6,11 +6,17 @@ import { useChainId } from "wagmi";
 import { useLifiQuote } from "@/hooks/useLifiQuote";
 import { CROSS_CHAIN_TARGETS } from "@/lib/lifi";
 
+const HOOK_TOKEN_PRESETS: { label: string; address: `0x${string}` }[] = [
+  { label: "WETH", address: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14" },
+  { label: "DAI", address: "0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357" },
+];
+
 type CrossChainSettleProps = {
   dealId: bigint;
   counterparty: string;
   amount: bigint; // principal in USDC (6 decimals)
   onSettle: (lifiData?: `0x${string}`) => void;
+  onSettleWithHook?: (preferredToken: `0x${string}`) => void;
   isPending: boolean;
 };
 
@@ -19,14 +25,16 @@ export function CrossChainSettle({
   counterparty,
   amount,
   onSettle,
+  onSettleWithHook,
   isPending,
 }: CrossChainSettleProps) {
   const chainId = useChainId();
-  const [mode, setMode] = useState<"same-chain" | "cross-chain">("same-chain");
+  const [mode, setMode] = useState<"same-chain" | "cross-chain" | "hook">("same-chain");
   const [destChainId, setDestChainId] = useState<number>(0);
+  const [preferredToken, setPreferredToken] = useState<string>("");
   const { quote, isLoading: quoteLoading, error: quoteError, fetchQuote, clearQuote } = useLifiQuote();
 
-  const handleModeChange = (newMode: "same-chain" | "cross-chain") => {
+  const handleModeChange = (newMode: "same-chain" | "cross-chain" | "hook") => {
     setMode(newMode);
     clearQuote();
     setDestChainId(0);
@@ -65,6 +73,15 @@ export function CrossChainSettle({
     }
   };
 
+  const handleSettleWithHook = () => {
+    if (!onSettleWithHook) return;
+    const token = preferredToken.trim();
+    if (!token.match(/^0x[a-fA-F0-9]{40}$/)) return;
+    onSettleWithHook(token as `0x${string}`);
+  };
+
+  const isValidTokenAddress = preferredToken.trim().match(/^0x[a-fA-F0-9]{40}$/);
+
   return (
     <div className="border border-border p-4 space-y-4">
       <div className="text-xs text-muted-foreground tracking-wide">
@@ -92,6 +109,16 @@ export function CrossChainSettle({
           }`}
         >
           cross-chain (LI.FI)
+        </button>
+        <button
+          onClick={() => handleModeChange("hook")}
+          className={`flex-1 px-3 py-2 text-xs transition-colors ${
+            mode === "hook"
+              ? "bg-primary text-primary-foreground"
+              : "border border-border text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          yield swap (v4 hook)
         </button>
       </div>
 
@@ -182,6 +209,80 @@ export function CrossChainSettle({
         </div>
       )}
 
+      {/* Hook / Yield Swap Options */}
+      {mode === "hook" && (
+        <div className="space-y-3">
+          <div className="text-xs text-muted-foreground">
+            swap yield portion to a preferred token via uniswap v4 hook
+          </div>
+
+          {/* Token Presets */}
+          <div className="grid grid-cols-2 gap-2">
+            {HOOK_TOKEN_PRESETS.map((preset) => (
+              <button
+                key={preset.address}
+                onClick={() => setPreferredToken(preset.address)}
+                className={`px-3 py-2 text-xs text-left transition-colors ${
+                  preferredToken.toLowerCase() === preset.address.toLowerCase()
+                    ? "border-2 border-primary text-foreground"
+                    : "border border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom Token Input */}
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">
+              preferred token address
+            </label>
+            <input
+              type="text"
+              value={preferredToken}
+              onChange={(e) => setPreferredToken(e.target.value)}
+              placeholder="0x..."
+              className="w-full px-3 py-2 text-xs bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+            />
+            {preferredToken && !isValidTokenAddress && (
+              <p className="text-xs text-destructive">
+                enter a valid token address (0x + 40 hex chars)
+              </p>
+            )}
+          </div>
+
+          {/* Hook Info */}
+          {isValidTokenAddress && (
+            <div className="border border-border p-3 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">settlement</span>
+                <span className="text-foreground">uniswap v4 hook</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">preferred token</span>
+                <span className="text-foreground font-mono">
+                  {HOOK_TOKEN_PRESETS.find(
+                    (p) => p.address.toLowerCase() === preferredToken.trim().toLowerCase()
+                  )?.label ?? `${preferredToken.slice(0, 6)}...${preferredToken.slice(-4)}`}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">yield portion</span>
+                <span className="text-foreground">
+                  swapped to preferred token on-chain
+                </span>
+              </div>
+              <div className="pt-1 border-t border-border mt-1">
+                <span className="text-muted-foreground">
+                  powered by uniswap v4
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Same-Chain Info */}
       {mode === "same-chain" && (
         <div className="text-xs text-muted-foreground">
@@ -191,21 +292,40 @@ export function CrossChainSettle({
       )}
 
       {/* Settle Button */}
-      <button
-        onClick={handleSettle}
-        disabled={
-          isPending ||
-          (mode === "cross-chain" && !quote) ||
-          quoteLoading
-        }
-        className="w-full px-4 py-2.5 text-sm bg-green-600 text-white hover:opacity-90 transition-opacity disabled:opacity-40"
-      >
-        {isPending
-          ? "confirming..."
-          : mode === "cross-chain"
-            ? `settle + bridge to ${CROSS_CHAIN_TARGETS.find((c) => c.chainId === destChainId)?.name ?? "..."}`
-            : "settle deal"}
-      </button>
+      {mode !== "hook" && (
+        <button
+          onClick={handleSettle}
+          disabled={
+            isPending ||
+            (mode === "cross-chain" && !quote) ||
+            quoteLoading
+          }
+          className="w-full px-4 py-2.5 text-sm bg-green-600 text-white hover:opacity-90 transition-opacity disabled:opacity-40"
+        >
+          {isPending
+            ? "confirming..."
+            : mode === "cross-chain"
+              ? `settle + bridge to ${CROSS_CHAIN_TARGETS.find((c) => c.chainId === destChainId)?.name ?? "..."}`
+              : "settle deal"}
+        </button>
+      )}
+
+      {/* Hook Settle Button */}
+      {mode === "hook" && (
+        <button
+          onClick={handleSettleWithHook}
+          disabled={isPending || !isValidTokenAddress || !onSettleWithHook}
+          className="w-full px-4 py-2.5 text-sm bg-green-600 text-white hover:opacity-90 transition-opacity disabled:opacity-40"
+        >
+          {isPending
+            ? "confirming..."
+            : `settle + swap yield to ${
+                HOOK_TOKEN_PRESETS.find(
+                  (p) => p.address.toLowerCase() === preferredToken.trim().toLowerCase()
+                )?.label ?? "token"
+              }`}
+        </button>
+      )}
     </div>
   );
 }

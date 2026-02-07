@@ -3,11 +3,24 @@
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { toast } from "sonner";
 import { restlessEscrowAbi, CONTRACTS } from "@/lib/contracts";
-import { type Address, keccak256, toHex, parseUnits } from "viem";
+import { type Address, keccak256, toHex, parseUnits, parseEventLogs } from "viem";
 
 export function useCreateDeal() {
   const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { data: receipt, isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  // Extract dealId from the DealCreated event in the transaction receipt
+  let createdDealId: bigint | null = null;
+  if (receipt) {
+    const logs = parseEventLogs({
+      abi: restlessEscrowAbi as readonly unknown[],
+      logs: receipt.logs,
+      eventName: "DealCreated",
+    });
+    if (logs.length > 0) {
+      createdDealId = (logs[0] as unknown as { args: { dealId: bigint } }).args.dealId;
+    }
+  }
 
   function createDeal(params: {
     counterparty: Address;
@@ -31,7 +44,7 @@ export function useCreateDeal() {
     });
   }
 
-  return { createDeal, hash, isPending, isConfirming, isSuccess, error };
+  return { createDeal, hash, isPending, isConfirming, isSuccess, createdDealId, error };
 }
 
 export function useFundDeal() {
@@ -72,6 +85,25 @@ export function useSettleDeal() {
   }
 
   return { settleDeal, hash, isPending, isConfirming, isSuccess, error };
+}
+
+export function useSettleDealWithHook() {
+  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  function settleDealWithHook(dealId: bigint, preferredToken: `0x${string}`) {
+    writeContract({
+      address: CONTRACTS.escrow,
+      abi: restlessEscrowAbi,
+      functionName: "settleDealWithHook",
+      args: [dealId, preferredToken],
+    }, {
+      onSuccess: () => toast.success("Deal settled! Yield swapped to preferred token via Uniswap v4."),
+      onError: (err) => toast.error(err.message.slice(0, 100)),
+    });
+  }
+
+  return { settleDealWithHook, hash, isPending, isConfirming, isSuccess, error };
 }
 
 export function useDisputeDeal() {

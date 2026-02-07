@@ -204,13 +204,15 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         deal.status = DealStatus.Settled;
 
         uint256 total = yieldAdapter.withdraw(dealId);
+        // Handle Aave aToken rounding loss (can return 1-2 wei less than deposited)
+        uint256 principal = total < deal.amount ? total : deal.amount;
 
         token.approve(address(settlement), total);
         settlement.settle(
             dealId,
             deal.depositor,
             deal.counterparty,
-            deal.amount,
+            principal,
             total,
             deal.yieldSplitCounterparty,
             lifiData
@@ -259,13 +261,15 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         deal.status = DealStatus.Settled;
 
         uint256 total = yieldAdapter.withdraw(dealId);
+        // Handle Aave aToken rounding loss (can return 1-2 wei less than deposited)
+        uint256 principal = total < deal.amount ? total : deal.amount;
 
         token.approve(address(settlement), total);
         settlement.settleWithHook(
             dealId,
             deal.depositor,
             deal.counterparty,
-            deal.amount,
+            principal,
             total,
             deal.yieldSplitCounterparty,
             preferredToken

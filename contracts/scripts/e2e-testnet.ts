@@ -22,7 +22,6 @@ import {
   getAddress,
   keccak256,
   toHex,
-  encodeFunctionData,
   parseAbi,
 } from "viem";
 
@@ -50,8 +49,8 @@ const SEPOLIA_CONFIG: NetworkConfig = {
 };
 
 const BASE_SEPOLIA_CONFIG: NetworkConfig = {
-  escrow: "0x52Bd9308B7c5f2f6362449C750BC35f57294D630",
-  adapter: "0x984342567Cc5980AcB7e51EED6A189e53A49DB30",
+  escrow: "0xdce58c9739a9f629cdff840f9da15ac82495b933",
+  adapter: "0xf2b99e27196809afd35a5c1e1f0747a0540e51b6",
   settlement: "0x2ED54fB830F51C5519AAfF5698dab4DAC71163b2",
   usdc: "0xba50Cd2A20f6DA35D788639E581bca8d0B5d4D5f",
   aUsdc: "0x10F1A9D11CDf50041f3f8cB7191CBE2f31750ACC",
@@ -108,11 +107,15 @@ function logTx(step: string, hash: string) {
   console.log(`  ${url}\n`);
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function waitForTx(hash: `0x${string}`) {
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   if (receipt.status === "reverted") {
     throw new Error(`Transaction reverted: ${hash}`);
   }
+  // Wait for RPC to index the new state (Base Sepolia can be slow)
+  await sleep(5000);
   return receipt;
 }
 
@@ -253,14 +256,9 @@ const createHash = await deployer.writeContract({
 logTx("Create Deal", createHash);
 const createReceipt = await waitForTx(createHash);
 
-// Extract deal ID from DealCreated event logs
-const dealCreatedAbi = parseAbi([
-  "event DealCreated(uint256 indexed dealId, address indexed depositor, address indexed counterparty, uint256 amount, bytes32 dealHash)",
-]);
+// Extract deal ID from DealCreated event logs (most reliable source)
 const dealLogs = createReceipt.logs;
 let dealId = 0n;
-// DealCreated event: topic0 = keccak256("DealCreated(uint256,address,address,uint256,bytes32)")
-// dealId is the first indexed param (topic1)
 for (const log of dealLogs) {
   if (log.address.toLowerCase() === config.escrow.toLowerCase() && log.topics.length >= 2) {
     dealId = BigInt(log.topics[1]!);
@@ -268,22 +266,23 @@ for (const log of dealLogs) {
   }
 }
 if (dealId === 0n) {
-  // Fallback: read dealCount
-  dealId = await publicClient.readContract({
-    address: config.escrow,
-    abi: escrowAbi,
-    functionName: "dealCount",
-  });
+  throw new Error("Failed to extract deal ID from DealCreated event logs");
 }
 console.log(`  Deal ID: ${dealId}`);
 
-// Read deal state
-const dealAfterCreate = await publicClient.readContract({
-  address: config.escrow,
-  abi: escrowAbi,
-  functionName: "getDeal",
-  args: [dealId],
-});
+// Read deal state with retry (RPC may serve stale data)
+let dealAfterCreate: any;
+for (let attempt = 0; attempt < 5; attempt++) {
+  dealAfterCreate = await publicClient.readContract({
+    address: config.escrow,
+    abi: escrowAbi,
+    functionName: "getDeal",
+    args: [dealId],
+  });
+  if (dealAfterCreate.id === dealId) break;
+  console.log(`  Waiting for RPC to index deal ${dealId} (attempt ${attempt + 1}/5)...`);
+  await sleep(3000);
+}
 console.log(`  Deal status: ${dealAfterCreate.status} (0=Created)\n`);
 
 // ─── Step 3: Fund deal (USDC → Aave via adapter) ─────────────────

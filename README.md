@@ -148,19 +148,19 @@ restless/
 
 | Contract | Address |
 |----------|---------|
-| RestlessEscrow | `0x3BFEe8c8dE15Da3b8A4658f81356ee8B51B813bC` |
-| AaveYieldAdapter | `0x368B4A4E4842Ae2F6126d647F21EAB6cA51dfD6e` |
-| Settlement | `0xd27b225c93950A7DdF5794EE081dA474d723c543` |
-| RestlessSettlementHook | `0x7DF2DAE0588FD084019d22355302dE7234ea7F61` |
+| RestlessEscrow | `0xc6b1316438d1597035B6D97BA22a610745685284` |
+| AaveYieldAdapter | `0xC6A101B9a376d3b6aB7d4092658E66d718738600` |
+| Settlement | `0x913997E266B5732Db47eD856Fe75F99983C471A8` |
+| RestlessSettlementHook | `0x3a562c291539Cc0031E899271987d3cb51980040` |
 
 ### Base Sepolia
 
 | Contract | Address |
 |----------|---------|
-| RestlessEscrow | `0x00064397094225D9bD136d84854C02e48da1e5Dc` |
-| AaveYieldAdapter | `0xE2917457Ba14Cba595cc0a538C40E00f3f574d2b` |
-| Settlement | `0x3a0152E60C2fD743CcD8B28f728243BB665Bd3Fd` |
-| RestlessSettlementHook | `0x2485aF7660Af4AbA5C58aeEd3e0cc89a59B565ba` |
+| RestlessEscrow | `0x52Bd9308B7c5f2f6362449C750BC35f57294D630` |
+| AaveYieldAdapter | `0x984342567Cc5980AcB7e51EED6A189e53A49DB30` |
+| Settlement | `0x2ED54fB830F51C5519AAfF5698dab4DAC71163b2` |
+| RestlessSettlementHook | `0xD2AB30E2911fA3ca0575661F726e0b28EC8c8040` |
 
 ## Getting Started
 

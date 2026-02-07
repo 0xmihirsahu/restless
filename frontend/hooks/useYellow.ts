@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useAccount, useSignMessage } from "wagmi";
+import { useState, useEffect, useCallback } from "react";
+import { useAccount, useWalletClient } from "wagmi";
 import type { Address, Hex } from "viem";
 import {
   connectToYellow,
@@ -23,7 +23,7 @@ import {
  */
 export function useYellowConnection() {
   const { address } = useAccount();
-  const { signMessageAsync } = useSignMessage();
+  const { data: walletClient } = useWalletClient();
   const [state, setState] = useState<YellowConnectionState>(
     getConnectionState()
   );
@@ -40,16 +40,13 @@ export function useYellowConnection() {
   }, [state]);
 
   const connect = useCallback(async () => {
-    if (!address) return;
+    if (!address || !walletClient) return;
     try {
-      await connectToYellow(address, async (message: string) => {
-        const sig = await signMessageAsync({ message });
-        return sig as Hex;
-      });
+      await connectToYellow(address, walletClient);
     } catch (err) {
       console.error("Yellow connection failed:", err);
     }
-  }, [address, signMessageAsync]);
+  }, [address, walletClient]);
 
   const disconnect = useCallback(() => {
     disconnectFromYellow();

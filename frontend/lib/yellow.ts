@@ -19,6 +19,7 @@ import {
   createApplicationMessage,
   createPingMessageV2,
   createECDSAMessageSigner,
+  createEIP712AuthMessageSigner,
   parseAnyRPCResponse,
   parseAuthChallengeResponse,
   parseCreateAppSessionResponse,
@@ -29,13 +30,17 @@ import {
   type RPCAppSessionAllocation,
   RPCProtocolVersion,
 } from "@erc7824/nitrolite";
-import type { Hex, Address } from "viem";
+import type { Hex, Address, WalletClient } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 // ── Config ─────────────────────────────────────────────────────────
 
 export const CLEARNODE_WS_URL = "wss://clearnet-sandbox.yellow.com/ws";
 
 const APP_NAME = "restless-escrow";
+// EIP-712 domain name MUST match the `application` field in auth_request
+// (ClearNode uses it to construct the EIP-712 domain for signature verification)
+const EIP712_DOMAIN = { name: APP_NAME };
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -102,23 +107,40 @@ export function onMessage(fn: (msg: any) => void): () => void {
 
 /**
  * Connect to Yellow ClearNode and authenticate.
- * Uses a wallet signing function to create a message signer.
+ *
+ * Auth uses EIP-712 structured data signatures (required by ClearNode).
+ * A random session key is generated for signing post-auth messages.
  */
 export async function connectToYellow(
   address: Address,
-  signMessage: (message: string) => Promise<Hex>
+  walletClient: WalletClient
 ): Promise<void> {
   if (ws && connectionState === "connected") return;
 
   currentAddress = address;
 
-  // Create a MessageSigner from the wallet's signMessage
-  // The Nitrolite SDK expects a signer that takes RPCData and returns a signature
-  currentSigner = async (payload: any): Promise<Hex> => {
-    const message =
-      typeof payload === "string" ? payload : JSON.stringify(payload);
-    return signMessage(message);
-  };
+  // Generate a session key pair for post-auth message signing
+  const sessionPrivateKey = generatePrivateKey();
+  const sessionAccount = privateKeyToAccount(sessionPrivateKey);
+
+  // Session signer for non-auth messages (app sessions, close, messages)
+  currentSigner = createECDSAMessageSigner(sessionPrivateKey);
+
+  // Auth parameters — must match between auth_request and EIP-712 signer
+  const authScope = "console";
+  const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 86400); // 24h
+
+  // EIP-712 signer for auth_verify only
+  const authSigner = createEIP712AuthMessageSigner(
+    walletClient,
+    {
+      scope: authScope,
+      session_key: sessionAccount.address,
+      expires_at: expiresAt,
+      allowances: [],
+    },
+    EIP712_DOMAIN
+  );
 
   return new Promise((resolve, reject) => {
     setConnectionState("connecting");
@@ -131,11 +153,11 @@ export async function connectToYellow(
         // Step 1: Request auth challenge
         const authReqMsg = await createAuthRequestMessage({
           address,
-          session_key: address,
+          session_key: sessionAccount.address,
           application: APP_NAME,
           allowances: [],
-          expires_at: BigInt(Math.floor(Date.now() / 1000) + 86400), // 24h
-          scope: "escrow",
+          expires_at: expiresAt,
+          scope: authScope,
         });
         ws!.send(authReqMsg);
       } catch (err) {
@@ -146,11 +168,11 @@ export async function connectToYellow(
 
     ws.onmessage = async (event) => {
       try {
-        const response = parseAnyRPCResponse(
+        const raw =
           typeof event.data === "string"
             ? event.data
-            : event.data.toString()
-        );
+            : event.data.toString();
+        const response = parseAnyRPCResponse(raw);
 
         // Handle auth challenge response
         if (
@@ -158,15 +180,11 @@ export async function connectToYellow(
           "method" in response &&
           (response as any).method === "auth_challenge"
         ) {
-          const challengeResp = parseAuthChallengeResponse(
-            typeof event.data === "string"
-              ? event.data
-              : event.data.toString()
-          );
-          // Sign the challenge and verify
+          const challengeResp = parseAuthChallengeResponse(raw);
+          // Sign the challenge with EIP-712 auth signer
           const verifyMsg = await createAuthVerifyMessage(
-            currentSigner!,
-            challengeResp,
+            authSigner,
+            challengeResp
           );
           ws!.send(verifyMsg);
           return;

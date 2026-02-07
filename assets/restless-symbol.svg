@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Standalone symbol mark for favicons, app icons, social avatars -->
+
+  <!-- ===== Concentric broken circles with pulse spark ===== -->
+  <g transform="translate(60, 60)">
+    <!-- Outer circle with gap (break at ~45° top-right) -->
+    <circle cx="0" cy="0" r="48" stroke="#2563EB" stroke-width="5.5"
+            stroke-dasharray="265 36" stroke-dashoffset="-50"
+            stroke-linecap="round" fill="none"/>
+
+    <!-- Inner circle with gap -->
+    <circle cx="0" cy="0" r="30" stroke="#2563EB" stroke-width="4.5"
+            stroke-dasharray="155 33" stroke-dashoffset="-28"
+            stroke-linecap="round" fill="none"/>
+
+    <!-- Pulse / spark at the break of the inner circle -->
+    <g transform="translate(21, -21) rotate(-45)">
+      <polyline points="-8,0 -4,0 -2,-7 1,7 3,-4 6,0 10,0"
+                stroke="#F59E0B" stroke-width="3"
+                stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </g>
+
+    <!-- Subtle glow dot -->
+    <circle cx="21" cy="-21" r="2.5" fill="#F59E0B" opacity="0.45"/>
+  </g>
+</svg>

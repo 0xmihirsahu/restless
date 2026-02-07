@@ -11,6 +11,9 @@ importers:
       '@aave/core-v3':
         specifier: ^1.19.3
         version: 1.19.3
+      '@erc7824/nitrolite':
+        specifier: ^0.5.3
+        version: 0.5.3
       '@nomicfoundation/hardhat-ignition':
         specifier: ^3.0.7
         version: 3.0.7(@nomicfoundation/hardhat-verify@3.0.9(hardhat@3.1.7))(hardhat@3.1.7)
@@ -23,6 +26,9 @@ importers:
       '@types/node':
         specifier: ^25.2.1
         version: 25.2.1
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
       '@uniswap/v4-core':
         specifier: ^1.0.2
         version: 1.0.2
@@ -44,6 +50,9 @@ importers:
       viem:
         specifier: ^2.45.1
         version: 2.45.1(zod@3.25.76)
+      ws:
+        specifier: ^8.19.0
+        version: 8.19.0
 
 packages:
 
@@ -68,6 +77,10 @@ packages:
 
   '@adraffy/ens-normalize@1.11.1':
     resolution: {integrity: sha512-nhCBV3quEgesuf7c7KYfperqSS14T8bYuvJ8PcLJp6znkZpFc0AuW4qBtr8eKVyPPe/8RSr7sglCWPU5eaxwKQ==}
+
+  '@erc7824/nitrolite@0.5.3':
+    resolution: {integrity: sha512-6bKQHt43D5ilIWJrhyOy7nYcniEZidq/ApOQ4WBqp5zzH+Bo8hWYl5sHmZ55DVSiNDfAEnthvzxmlEvNdVI5Xw==}
+    engines: {node: '>=20.0.0'}
 
   '@esbuild/aix-ppc64@0.27.3':
     resolution: {integrity: sha512-9fJMTNFTWZMh5qwrBItuziu834eOCUcEqymSH7pY+zoMVEZg3gcPuBNxH1EvfVYe9h0x/Ptw8KBzv7qxb7l8dg==}
@@ -523,6 +536,9 @@ packages:
   '@types/node@25.2.1':
     resolution: {integrity: sha512-CPrnr8voK8vC6eEtyRzvMpgp3VyVRhgclonE7qYi6P9sXwYb59ucfrnmFBTaP0yUi8Gk4yZg/LlTJULGxvTNsg==}
 
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
+
   '@uniswap/v4-core@1.0.2':
     resolution: {integrity: sha512-X15Tm2wWd+USAzEExMbo+g9naA6QN6mPgWm0MzDwRNlOfaNlepfUpSyt9RSrUfEODspwbyWbcLg6t5nwc/e7lg==}
 
@@ -903,6 +919,16 @@ snapshots:
   '@adraffy/ens-normalize@1.10.1': {}
 
   '@adraffy/ens-normalize@1.11.1': {}
+
+  '@erc7824/nitrolite@0.5.3':
+    dependencies:
+      abitype: 1.2.3(zod@3.25.76)
+      viem: 2.45.1(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - typescript
+      - utf-8-validate
 
   '@esbuild/aix-ppc64@0.27.3':
     optional: true
@@ -1414,6 +1440,10 @@ snapshots:
   '@types/node@25.2.1':
     dependencies:
       undici-types: 7.16.0
+
+  '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 25.2.1
 
   '@uniswap/v4-core@1.0.2': {}
 

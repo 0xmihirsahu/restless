@@ -14,16 +14,19 @@
   },
   "devDependencies": {
     "@aave/core-v3": "^1.19.3",
+    "@erc7824/nitrolite": "^0.5.3",
     "@nomicfoundation/hardhat-ignition": "^3.0.7",
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
     "@openzeppelin/contracts": "^5.2.0",
     "@types/node": "^25.2.1",
+    "@types/ws": "^8.18.1",
     "@uniswap/v4-core": "^1.0.2",
     "@uniswap/v4-periphery": "^1.0.3",
     "dotenv": "^16.5.0",
     "forge-std": "github:foundry-rs/forge-std#v1.9.7",
     "hardhat": "^3.0.0",
     "solmate": "^6.8.0",
-    "viem": "^2.45.1"
+    "viem": "^2.45.1",
+    "ws": "^8.19.0"
   }
 }

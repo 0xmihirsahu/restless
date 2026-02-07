@@ -330,6 +330,73 @@ const aUsdcBal = await publicClient.readContract({
 console.log(`  Adapter aUSDC: ${formatUnits(aUsdcBal, 6)} (Aave deposit confirmed)`);
 
 // ═══════════════════════════════════════════════════════════════════
+// STEP 4b: Inject simulated yield (send extra aUSDC to adapter)
+//   Aave needs hours/days to accrue meaningful yield.
+//   We simulate by minting USDC, depositing to Aave, and transferring
+//   aUSDC to the adapter — functionally identical to real yield accrual.
+// ═══════════════════════════════════════════════════════════════════
+console.log("\n─── STEP 4b: Inject Simulated Yield ───────────────────────────");
+
+const YIELD_AMOUNT = parseUnits("2", 6); // 2 USDC simulated yield
+const A_USDC = getAddress("0x10F1A9D11CDf50041f3f8cB7191CBE2f31750ACC");
+const AAVE_POOL = getAddress("0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27");
+
+const aavePoolAbi = parseAbi([
+  "function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)",
+]);
+const aTokenTransferAbi = parseAbi([
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function balanceOf(address) view returns (uint256)",
+]);
+
+// Mint yield USDC from faucet
+console.log(`  Minting ${formatUnits(YIELD_AMOUNT, 6)} USDC as simulated yield...`);
+const yieldMintHash = await deployer.writeContract({
+  address: AAVE_FAUCET, abi: faucetAbi, functionName: "mint",
+  args: [USDC, deployer.account.address, YIELD_AMOUNT],
+  chain: deployer.chain,
+});
+await waitForTx(yieldMintHash);
+
+// Approve Aave pool to take USDC
+const approveAaveHash = await deployer.writeContract({
+  address: USDC, abi: erc20Abi, functionName: "approve",
+  args: [AAVE_POOL, YIELD_AMOUNT], chain: deployer.chain,
+});
+await waitForTx(approveAaveHash);
+
+// Supply to Aave (get aUSDC to our wallet)
+const supplyHash = await deployer.writeContract({
+  address: AAVE_POOL, abi: aavePoolAbi, functionName: "supply",
+  args: [USDC, YIELD_AMOUNT, deployer.account.address, 0],
+  chain: deployer.chain,
+});
+await waitForTx(supplyHash);
+
+// Transfer aUSDC to adapter (simulates yield accrual on aToken balance)
+const myAUsdc = await publicClient.readContract({
+  address: A_USDC, abi: aTokenTransferAbi, functionName: "balanceOf",
+  args: [deployer.account.address],
+});
+const toTransfer = myAUsdc < YIELD_AMOUNT ? myAUsdc : YIELD_AMOUNT;
+console.log(`  Transferring ${formatUnits(toTransfer, 6)} aUSDC to adapter...`);
+const transferATokenHash = await deployer.writeContract({
+  address: A_USDC, abi: aTokenTransferAbi, functionName: "transfer",
+  args: [ADAPTER, toTransfer], chain: deployer.chain,
+});
+logTx("Inject Simulated Yield (aUSDC → Adapter)", transferATokenHash);
+await waitForTx(transferATokenHash);
+
+// Verify adapter now has more aUSDC than principal
+const adapterAUsdcAfterYield = await publicClient.readContract({
+  address: A_USDC, abi: aTokenTransferAbi, functionName: "balanceOf",
+  args: [ADAPTER],
+});
+console.log(`  Adapter aUSDC after yield injection: ${formatUnits(adapterAUsdcAfterYield, 6)}`);
+console.log(`  Deal principal: ${formatUnits(DEAL_AMOUNT, 6)} USDC`);
+console.log(`  Expected yield: ~${formatUnits(toTransfer, 6)} USDC → will be swapped to WETH via v4 hook`);
+
+// ═══════════════════════════════════════════════════════════════════
 // STEP 5: Settle with Hook (v4 swap yield → WETH)
 // ═══════════════════════════════════════════════════════════════════
 console.log("\n─── STEP 5: Settle with v4 Hook ─────────────────────────────────");

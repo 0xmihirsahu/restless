@@ -29,7 +29,7 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         keccak256("SettleRequest(uint256 dealId,bytes32 dealHash)");
 
     modifier onlyOwner() {
-        if (msg.sender != owner) revert IRestlessEscrow.OnlyOwner();
+        if (msg.sender != owner) revert IRestlessEscrow.OnlyOwner(msg.sender);
         _;
     }
 
@@ -61,8 +61,8 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         if (params.counterparty == address(0)) revert IRestlessEscrow.InvalidCounterparty();
         if (params.counterparty == msg.sender) revert IRestlessEscrow.CannotEscrowWithSelf();
         if (params.amount == 0) revert IRestlessEscrow.InvalidAmount();
-        if (params.yieldSplitCounterparty > 100) revert IRestlessEscrow.InvalidYieldSplit();
-        if (params.timeout < MIN_TIMEOUT || params.timeout > MAX_TIMEOUT) revert IRestlessEscrow.InvalidTimeout();
+        if (params.yieldSplitCounterparty > 100) revert IRestlessEscrow.InvalidYieldSplit(params.yieldSplitCounterparty);
+        if (params.timeout < MIN_TIMEOUT || params.timeout > MAX_TIMEOUT) revert IRestlessEscrow.InvalidTimeout(params.timeout, MIN_TIMEOUT, MAX_TIMEOUT);
 
         unchecked { dealCount++; }
         deals[dealCount] = Deal({
@@ -85,14 +85,17 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function fundDeal(uint256 dealId) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
-        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound();
-        if (deal.status != DealStatus.Created) revert IRestlessEscrow.InvalidDealStatus();
-        if (msg.sender != deal.depositor) revert IRestlessEscrow.Unauthorized();
+        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound(dealId);
+        if (deal.status != DealStatus.Created) revert IRestlessEscrow.InvalidDealStatus(dealId, deal.status);
+        if (msg.sender != deal.depositor) revert IRestlessEscrow.Unauthorized(msg.sender, dealId);
 
         deal.status = DealStatus.Funded;
         deal.fundedAt = uint40(block.timestamp);
 
+        uint256 balBefore = token.balanceOf(address(this));
         token.safeTransferFrom(msg.sender, address(this), deal.amount);
+        if (token.balanceOf(address(this)) - balBefore != deal.amount) revert IRestlessEscrow.FeeOnTransferNotSupported();
+
         token.forceApprove(address(yieldAdapter), deal.amount);
         yieldAdapter.deposit(dealId, deal.amount);
 
@@ -102,9 +105,9 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function disputeDeal(uint256 dealId) external whenNotPaused {
         Deal storage deal = deals[dealId];
-        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound();
-        if (deal.status != DealStatus.Funded) revert IRestlessEscrow.InvalidDealStatus();
-        if (msg.sender != deal.depositor && msg.sender != deal.counterparty) revert IRestlessEscrow.Unauthorized();
+        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound(dealId);
+        if (deal.status != DealStatus.Funded) revert IRestlessEscrow.InvalidDealStatus(dealId, deal.status);
+        if (msg.sender != deal.depositor && msg.sender != deal.counterparty) revert IRestlessEscrow.Unauthorized(msg.sender, dealId);
 
         deal.status = DealStatus.Disputed;
         deal.disputedAt = uint40(block.timestamp);
@@ -115,9 +118,9 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function cancelDeal(uint256 dealId) external whenNotPaused {
         Deal storage deal = deals[dealId];
-        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound();
-        if (deal.status != DealStatus.Created) revert IRestlessEscrow.InvalidDealStatus();
-        if (msg.sender != deal.depositor && msg.sender != deal.counterparty) revert IRestlessEscrow.Unauthorized();
+        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound(dealId);
+        if (deal.status != DealStatus.Created) revert IRestlessEscrow.InvalidDealStatus(dealId, deal.status);
+        if (msg.sender != deal.depositor && msg.sender != deal.counterparty) revert IRestlessEscrow.Unauthorized(msg.sender, dealId);
 
         deal.status = DealStatus.Cancelled;
 
@@ -127,9 +130,9 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function settleDeal(uint256 dealId, bytes calldata lifiData) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
-        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound();
-        if (deal.status != DealStatus.Funded) revert IRestlessEscrow.InvalidDealStatus();
-        if (msg.sender != deal.depositor && msg.sender != deal.counterparty) revert IRestlessEscrow.Unauthorized();
+        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound(dealId);
+        if (deal.status != DealStatus.Funded) revert IRestlessEscrow.InvalidDealStatus(dealId, deal.status);
+        if (msg.sender != deal.depositor && msg.sender != deal.counterparty) revert IRestlessEscrow.Unauthorized(msg.sender, dealId);
 
         _executeSettlement(deal, dealId, lifiData);
     }
@@ -142,8 +145,8 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         bytes calldata counterpartySig
     ) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
-        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound();
-        if (deal.status != DealStatus.Funded) revert IRestlessEscrow.InvalidDealStatus();
+        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound(dealId);
+        if (deal.status != DealStatus.Funded) revert IRestlessEscrow.InvalidDealStatus(dealId, deal.status);
 
         bytes32 structHash = keccak256(
             abi.encode(SETTLE_TYPEHASH, dealId, deal.dealHash)
@@ -151,9 +154,9 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         bytes32 digest = _hashTypedDataV4(structHash);
 
         if (!SignatureChecker.isValidSignatureNow(deal.depositor, digest, depositorSig))
-            revert IRestlessEscrow.InvalidSignature();
+            revert IRestlessEscrow.InvalidSignature(deal.depositor);
         if (!SignatureChecker.isValidSignatureNow(deal.counterparty, digest, counterpartySig))
-            revert IRestlessEscrow.InvalidSignature();
+            revert IRestlessEscrow.InvalidSignature(deal.counterparty);
 
         _executeSettlement(deal, dealId, lifiData);
     }
@@ -161,9 +164,9 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function settleDealWithHook(uint256 dealId, address preferredToken) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
-        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound();
-        if (deal.status != DealStatus.Funded) revert IRestlessEscrow.InvalidDealStatus();
-        if (msg.sender != deal.depositor && msg.sender != deal.counterparty) revert IRestlessEscrow.Unauthorized();
+        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound(dealId);
+        if (deal.status != DealStatus.Funded) revert IRestlessEscrow.InvalidDealStatus(dealId, deal.status);
+        if (msg.sender != deal.depositor && msg.sender != deal.counterparty) revert IRestlessEscrow.Unauthorized(msg.sender, dealId);
 
         _executeHookSettlement(deal, dealId, preferredToken);
     }
@@ -176,8 +179,8 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         bytes calldata counterpartySig
     ) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
-        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound();
-        if (deal.status != DealStatus.Funded) revert IRestlessEscrow.InvalidDealStatus();
+        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound(dealId);
+        if (deal.status != DealStatus.Funded) revert IRestlessEscrow.InvalidDealStatus(dealId, deal.status);
 
         bytes32 structHash = keccak256(
             abi.encode(SETTLE_TYPEHASH, dealId, deal.dealHash)
@@ -185,9 +188,9 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         bytes32 digest = _hashTypedDataV4(structHash);
 
         if (!SignatureChecker.isValidSignatureNow(deal.depositor, digest, depositorSig))
-            revert IRestlessEscrow.InvalidSignature();
+            revert IRestlessEscrow.InvalidSignature(deal.depositor);
         if (!SignatureChecker.isValidSignatureNow(deal.counterparty, digest, counterpartySig))
-            revert IRestlessEscrow.InvalidSignature();
+            revert IRestlessEscrow.InvalidSignature(deal.counterparty);
 
         _executeHookSettlement(deal, dealId, preferredToken);
     }
@@ -195,10 +198,10 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function claimTimeout(uint256 dealId) external nonReentrant {
         Deal storage deal = deals[dealId];
-        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound();
-        if (deal.status != DealStatus.Disputed) revert IRestlessEscrow.InvalidDealStatus();
-        if (msg.sender != deal.depositor) revert IRestlessEscrow.Unauthorized();
-        if (block.timestamp < deal.disputedAt + deal.timeout) revert IRestlessEscrow.TimeoutNotElapsed();
+        if (deal.depositor == address(0)) revert IRestlessEscrow.DealNotFound(dealId);
+        if (deal.status != DealStatus.Disputed) revert IRestlessEscrow.InvalidDealStatus(dealId, deal.status);
+        if (msg.sender != deal.depositor) revert IRestlessEscrow.Unauthorized(msg.sender, dealId);
+        if (block.timestamp < deal.disputedAt + deal.timeout) revert IRestlessEscrow.TimeoutNotElapsed(block.timestamp, deal.disputedAt + deal.timeout);
 
         deal.status = DealStatus.TimedOut;
 
@@ -216,6 +219,17 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function getAccruedYield(uint256 dealId) external view returns (uint256) {
         return yieldAdapter.getAccruedYield(dealId);
+    }
+
+    /// @notice Compute the EIP-712 digest for signing a settlement
+    /// @dev Useful for off-chain tooling to construct the exact hash to sign
+    /// @param dealId The deal to compute the digest for
+    /// @return The EIP-712 typed data hash
+    function getSettleDigest(uint256 dealId) external view returns (bytes32) {
+        bytes32 structHash = keccak256(
+            abi.encode(SETTLE_TYPEHASH, dealId, deals[dealId].dealHash)
+        );
+        return _hashTypedDataV4(structHash);
     }
 
     /// @notice Rescue tokens accidentally sent to this contract

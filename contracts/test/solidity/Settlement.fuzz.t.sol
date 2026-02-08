@@ -179,7 +179,7 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        vm.expectRevert(ISettlement.InvalidYieldSplit.selector);
+        vm.expectRevert(abi.encodeWithSelector(ISettlement.InvalidYieldSplit.selector, badSplit));
         settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
@@ -201,7 +201,7 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        vm.expectRevert(ISettlement.TotalLessThanPrincipal.selector);
+        vm.expectRevert(abi.encodeWithSelector(ISettlement.TotalLessThanPrincipal.selector, total, principal));
         settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,

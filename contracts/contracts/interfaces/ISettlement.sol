@@ -9,14 +9,14 @@ import {SettleParams} from "../Types.sol";
 interface ISettlement {
     error InvalidToken();
     error InvalidPrincipal();
-    error TotalLessThanPrincipal();
-    error InvalidYieldSplit();
+    error TotalLessThanPrincipal(uint256 total, uint256 principal);
+    error InvalidYieldSplit(uint8 provided);
     error HookNotConfigured();
     error LiFiNotConfigured();
     error LiFiBridgeFailed();
-    error LiFiAmountMismatch();
-    error OnlyOwner();
-    error OnlyEscrow();
+    error LiFiAmountMismatch(uint256 expected, uint256 actual);
+    error OnlyOwner(address caller);
+    error OnlyEscrow(address caller);
     error InvalidEscrow();
 
     event DealSettled(

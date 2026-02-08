@@ -123,7 +123,7 @@ contract RestlessEscrowFuzzTest is Test {
         vm.assume(timeout < 1 days || timeout > 30 days);
 
         vm.prank(depositor);
-        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.InvalidTimeout.selector));
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.InvalidTimeout.selector, timeout, uint32(1 days), uint32(30 days)));
         escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: 1000e6,

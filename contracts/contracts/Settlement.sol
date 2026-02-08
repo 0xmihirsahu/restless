@@ -17,12 +17,12 @@ contract Settlement is ISettlement {
     address public escrow;
 
     modifier onlyOwner() {
-        if (msg.sender != owner) revert OnlyOwner();
+        if (msg.sender != owner) revert OnlyOwner(msg.sender);
         _;
     }
 
     modifier onlyEscrow() {
-        if (msg.sender != escrow) revert OnlyEscrow();
+        if (msg.sender != escrow) revert OnlyEscrow(msg.sender);
         _;
     }
 
@@ -112,8 +112,8 @@ contract Settlement is ISettlement {
 
     function _validateSettleParams(SettleParams calldata params) internal pure {
         if (params.principal == 0) revert InvalidPrincipal();
-        if (params.total < params.principal) revert TotalLessThanPrincipal();
-        if (params.yieldSplitCounterparty > 100) revert InvalidYieldSplit();
+        if (params.total < params.principal) revert TotalLessThanPrincipal(params.total, params.principal);
+        if (params.yieldSplitCounterparty > 100) revert InvalidYieldSplit(params.yieldSplitCounterparty);
     }
 
     function _splitYield(
@@ -132,7 +132,8 @@ contract Settlement is ISettlement {
         token.forceApprove(lifiDiamond, amount);
         (bool success, ) = lifiDiamond.call(lifiData);
         if (!success) revert LiFiBridgeFailed();
-        if (balBefore - token.balanceOf(address(this)) != amount) revert LiFiAmountMismatch();
+        uint256 consumed = balBefore - token.balanceOf(address(this));
+        if (consumed != amount) revert LiFiAmountMismatch(amount, consumed);
         token.forceApprove(lifiDiamond, 0);
     }
 }

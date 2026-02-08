@@ -32,12 +32,12 @@ contract RestlessSettlementHook is BaseHook, IUnlockCallback, IRestlessSettlemen
     mapping(address => PoolKey) public poolKeys;
 
     modifier onlySettlement() {
-        if (msg.sender != settlementAddress) revert OnlySettlement();
+        if (msg.sender != settlementAddress) revert OnlySettlement(msg.sender);
         _;
     }
 
     modifier onlyOwner() {
-        if (msg.sender != owner) revert OnlyOwner();
+        if (msg.sender != owner) revert OnlyOwner(msg.sender);
         _;
     }
 
@@ -139,7 +139,7 @@ contract RestlessSettlementHook is BaseHook, IUnlockCallback, IRestlessSettlemen
     function unlockCallback(
         bytes calldata data
     ) external override returns (bytes memory) {
-        if (msg.sender != address(poolManager)) revert OnlyPoolManager();
+        if (msg.sender != address(poolManager)) revert OnlyPoolManager(msg.sender);
 
         SwapCallbackData memory cbData = abi.decode(data, (SwapCallbackData));
         BalanceDelta delta = _executeSwap(cbData);

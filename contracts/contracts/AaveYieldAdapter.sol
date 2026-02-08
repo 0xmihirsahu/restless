@@ -32,12 +32,12 @@ contract AaveYieldAdapter is IYieldAdapter {
     uint256 public totalDeposited;
 
     modifier onlyEscrow() {
-        if (msg.sender != escrow) revert OnlyEscrow();
+        if (msg.sender != escrow) revert OnlyEscrow(msg.sender);
         _;
     }
 
     modifier onlyOwner() {
-        if (msg.sender != owner) revert OnlyOwner();
+        if (msg.sender != owner) revert OnlyOwner(msg.sender);
         _;
     }
 
@@ -71,7 +71,7 @@ contract AaveYieldAdapter is IYieldAdapter {
 
     /// @inheritdoc IYieldAdapter
     function deposit(uint256 dealId, uint256 amount) external onlyEscrow {
-        if (deposits[dealId].active) revert DealAlreadyDeposited();
+        if (deposits[dealId].active) revert DealAlreadyDeposited(dealId);
         if (amount == 0) revert InvalidAmount();
 
         uint256 aTokenBefore = aToken.balanceOf(address(this));
@@ -96,7 +96,7 @@ contract AaveYieldAdapter is IYieldAdapter {
     /// @inheritdoc IYieldAdapter
     function withdraw(uint256 dealId) external onlyEscrow returns (uint256 total) {
         DepositRecord storage record = deposits[dealId];
-        if (!record.active) revert NoActiveDeposit();
+        if (!record.active) revert NoActiveDeposit(dealId);
 
         uint256 totalATokens = aToken.balanceOf(address(this));
         uint256 dealShare;

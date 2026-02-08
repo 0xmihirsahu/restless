@@ -17,12 +17,12 @@ contract MockRestlessSettlementHook is IRestlessSettlementHook {
     mapping(address => uint256) public swapRates;
 
     modifier onlySettlement() {
-        if (msg.sender != settlementAddress) revert OnlySettlement();
+        if (msg.sender != settlementAddress) revert OnlySettlement(msg.sender);
         _;
     }
 
     modifier onlyOwner() {
-        if (msg.sender != owner) revert OnlyOwner();
+        if (msg.sender != owner) revert OnlyOwner(msg.sender);
         _;
     }
 

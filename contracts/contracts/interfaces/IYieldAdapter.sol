@@ -6,10 +6,10 @@ pragma solidity ^0.8.24;
 interface IYieldAdapter {
     error InvalidToken();
     error InvalidAmount();
-    error DealAlreadyDeposited();
-    error NoActiveDeposit();
-    error OnlyEscrow();
-    error OnlyOwner();
+    error DealAlreadyDeposited(uint256 dealId);
+    error NoActiveDeposit(uint256 dealId);
+    error OnlyEscrow(address caller);
+    error OnlyOwner(address caller);
     error EscrowAlreadySet();
     error InvalidEscrow();
 

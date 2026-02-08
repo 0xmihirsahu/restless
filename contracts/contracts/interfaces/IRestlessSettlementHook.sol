@@ -7,9 +7,9 @@ pragma solidity ^0.8.24;
 interface IRestlessSettlementHook {
     error InvalidAmount();
     error PoolNotConfigured();
-    error OnlySettlement();
-    error OnlyOwner();
-    error OnlyPoolManager();
+    error OnlySettlement(address caller);
+    error OnlyOwner(address caller);
+    error OnlyPoolManager(address caller);
     error InvalidInputToken();
     error InvalidSettlementAddress();
     error InvalidOwnerAddress();

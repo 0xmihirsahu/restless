@@ -1,24 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {CreateDealParams, Deal} from "../Types.sol";
+import {CreateDealParams, Deal, DealStatus} from "../Types.sol";
 
 /// @title IRestlessEscrow
 /// @notice P2P escrow where locked funds earn yield while waiting for deal completion
 /// @dev Escrow never holds tokens directly — routes to yield adapter immediately
 interface IRestlessEscrow {
-    error OnlyOwner();
+    error OnlyOwner(address caller);
     error InvalidAddress();
     error InvalidCounterparty();
     error CannotEscrowWithSelf();
     error InvalidAmount();
-    error InvalidYieldSplit();
-    error InvalidTimeout();
-    error DealNotFound();
-    error InvalidDealStatus();
-    error Unauthorized();
-    error TimeoutNotElapsed();
-    error InvalidSignature();
+    error InvalidYieldSplit(uint8 provided);
+    error InvalidTimeout(uint32 provided, uint32 min, uint32 max);
+    error DealNotFound(uint256 dealId);
+    error InvalidDealStatus(uint256 dealId, DealStatus current);
+    error Unauthorized(address caller, uint256 dealId);
+    error TimeoutNotElapsed(uint256 currentTime, uint256 expiresAt);
+    error InvalidSignature(address signer);
+    error FeeOnTransferNotSupported();
 
     event DealCreated(uint256 indexed dealId, address indexed depositor, address indexed counterparty, uint256 amount, bytes32 dealHash);
     event DealFunded(uint256 indexed dealId, uint256 amount);

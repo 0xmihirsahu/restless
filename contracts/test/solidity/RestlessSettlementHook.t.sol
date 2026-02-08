@@ -109,7 +109,7 @@ contract RestlessSettlementHookTest is Test, Deployers {
 
     function test_settleWithSwap_revertsIfNotSettlement() public {
         vm.prank(address(0xDEAD));
-        vm.expectRevert(IRestlessSettlementHook.OnlySettlement.selector);
+        vm.expectRevert(abi.encodeWithSelector(IRestlessSettlementHook.OnlySettlement.selector, address(0xDEAD)));
         hook.settleWithSwap(recipient, 1e18, outputToken);
     }
 
@@ -126,7 +126,7 @@ contract RestlessSettlementHookTest is Test, Deployers {
 
     function test_setPoolKey_onlyOwner() public {
         vm.prank(address(0xDEAD));
-        vm.expectRevert(IRestlessSettlementHook.OnlyOwner.selector);
+        vm.expectRevert(abi.encodeWithSelector(IRestlessSettlementHook.OnlyOwner.selector, address(0xDEAD)));
         hook.setPoolKey(address(0x999), poolKey);
     }
 
@@ -167,7 +167,7 @@ contract RestlessSettlementHookTest is Test, Deployers {
 
     function test_unlockCallback_revertsIfNotPoolManager() public {
         vm.prank(address(0xDEAD));
-        vm.expectRevert(IRestlessSettlementHook.OnlyPoolManager.selector);
+        vm.expectRevert(abi.encodeWithSelector(IRestlessSettlementHook.OnlyPoolManager.selector, address(0xDEAD)));
         hook.unlockCallback(new bytes(0));
     }
 }

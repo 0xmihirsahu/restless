@@ -104,7 +104,7 @@ contract SettlementTest is Test {
         uint256 badTotal = PRINCIPAL - 100e6;
         _mintAndApprove(badTotal);
 
-        vm.expectRevert(ISettlement.TotalLessThanPrincipal.selector);
+        vm.expectRevert(abi.encodeWithSelector(ISettlement.TotalLessThanPrincipal.selector, badTotal, PRINCIPAL));
         settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
@@ -118,7 +118,7 @@ contract SettlementTest is Test {
     function test_revert_invalid_yield_split() public {
         _mintAndApprove(TOTAL);
 
-        vm.expectRevert(ISettlement.InvalidYieldSplit.selector);
+        vm.expectRevert(abi.encodeWithSelector(ISettlement.InvalidYieldSplit.selector, uint8(101)));
         settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
@@ -161,7 +161,7 @@ contract SettlementTest is Test {
             address(usdc), TOTAL, counterparty, 421614
         );
 
-        vm.expectRevert(ISettlement.LiFiAmountMismatch.selector);
+        vm.expectRevert(abi.encodeWithSelector(ISettlement.LiFiAmountMismatch.selector, TOTAL, uint256(0)));
         lifiSettlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,

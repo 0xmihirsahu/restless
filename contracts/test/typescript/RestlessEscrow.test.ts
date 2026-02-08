@@ -68,11 +68,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100, // 100% yield to counterparty
-        86400n, // 1 day timeout
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
 
       const deal = await escrow.read.getDeal([1n]);
@@ -95,11 +97,13 @@ describe("RestlessEscrow", function () {
 
       await viem.assertions.revertWith(
         escrowAsDepositor.write.createDeal([
-          counterparty.account.address,
-          0n,
-          100,
-          86400n,
-          dealHash,
+          {
+            counterparty: counterparty.account.address,
+            amount: 0n,
+            yieldSplitCounterparty: 100,
+            timeout: 86400n,
+            dealHash: dealHash,
+          },
         ]),
         "Amount must be > 0"
       );
@@ -117,11 +121,13 @@ describe("RestlessEscrow", function () {
 
       await viem.assertions.revertWith(
         escrowAsDepositor.write.createDeal([
-          depositor.account.address,
-          amount,
-          100,
-          86400n,
-          dealHash,
+          {
+            counterparty: depositor.account.address,
+            amount: amount,
+            yieldSplitCounterparty: 100,
+            timeout: 86400n,
+            dealHash: dealHash,
+          },
         ]),
         "Cannot escrow with self"
       );
@@ -139,11 +145,13 @@ describe("RestlessEscrow", function () {
 
       await viem.assertions.revertWith(
         escrowAsDepositor.write.createDeal([
-          counterparty.account.address,
-          amount,
-          101,
-          86400n,
-          dealHash,
+          {
+            counterparty: counterparty.account.address,
+            amount: amount,
+            yieldSplitCounterparty: 101,
+            timeout: 86400n,
+            dealHash: dealHash,
+          },
         ]),
         "Invalid yield split"
       );
@@ -162,11 +170,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
 
       await escrowAsDepositor.write.fundDeal([1n]);
@@ -190,11 +200,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
 
       const escrowAsCounterparty = await viem.getContractAt(
@@ -222,11 +234,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -253,11 +267,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -286,11 +302,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -322,11 +340,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
       await escrowAsDepositor.write.settleDeal([1n, "0x"]);
@@ -346,11 +366,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -377,11 +399,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
 
       await viem.assertions.revertWith(
@@ -421,11 +445,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -476,11 +502,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -524,11 +552,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -572,11 +602,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -624,11 +656,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
 
       await escrowAsDepositor.write.cancelDeal([1n]);
@@ -648,11 +682,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
 
       const escrowAsCounterparty = await viem.getContractAt(
@@ -678,11 +714,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
 
       const escrowAsStranger = await viem.getContractAt(
@@ -708,11 +746,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -733,11 +773,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
 
       const hash = await escrowAsDepositor.write.cancelDeal([1n]);
@@ -819,11 +861,13 @@ describe("RestlessEscrow", function () {
 
       await viem.assertions.revertWithCustomError(
         escrowAsDepositor.write.createDeal([
-          counterparty.account.address,
-          amount,
-          100,
-          86400n,
-          dealHash,
+          {
+            counterparty: counterparty.account.address,
+            amount: amount,
+            yieldSplitCounterparty: 100,
+            timeout: 86400n,
+            dealHash: dealHash,
+          },
         ]),
         escrow,
         "EnforcedPause"
@@ -851,11 +895,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -888,11 +934,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -919,11 +967,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
 
       await viem.assertions.revertWith(
@@ -945,11 +995,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n, // 1 day timeout
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
       await escrowAsDepositor.write.disputeDeal([1n]);
@@ -983,11 +1035,13 @@ describe("RestlessEscrow", function () {
       );
 
       await escrowAsDepositor.write.createDeal([
-        counterparty.account.address,
-        amount,
-        100,
-        86400n,
-        dealHash,
+        {
+          counterparty: counterparty.account.address,
+          amount: amount,
+          yieldSplitCounterparty: 100,
+          timeout: 86400n,
+          dealHash: dealHash,
+        },
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
       await escrowAsDepositor.write.disputeDeal([1n]);

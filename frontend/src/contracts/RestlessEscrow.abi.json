@@ -321,29 +321,36 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "counterparty",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint8",
-        "name": "yieldSplitCounterparty",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint256",
-        "name": "timeout",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "dealHash",
-        "type": "bytes32"
+        "components": [
+          {
+            "internalType": "address",
+            "name": "counterparty",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "yieldSplitCounterparty",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timeout",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "dealHash",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct RestlessEscrow.CreateDealParams",
+        "name": "params",
+        "type": "tuple"
       }
     ],
     "name": "createDeal",

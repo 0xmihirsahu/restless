@@ -24,6 +24,14 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         Cancelled
     }
 
+    struct CreateDealParams {
+        address counterparty;
+        uint256 amount;
+        uint8 yieldSplitCounterparty;
+        uint256 timeout;
+        bytes32 dealHash;
+    }
+
     struct Deal {
         uint256 id;
         address depositor;
@@ -86,34 +94,30 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
     }
 
     function createDeal(
-        address counterparty,
-        uint256 amount,
-        uint8 yieldSplitCounterparty,
-        uint256 timeout,
-        bytes32 dealHash
+        CreateDealParams calldata params
     ) external whenNotPaused returns (uint256) {
-        require(counterparty != address(0), "Invalid counterparty");
-        require(counterparty != msg.sender, "Cannot escrow with self");
-        require(amount > 0, "Amount must be > 0");
-        require(yieldSplitCounterparty <= 100, "Invalid yield split");
-        require(timeout >= MIN_TIMEOUT && timeout <= MAX_TIMEOUT, "Invalid timeout");
+        require(params.counterparty != address(0), "Invalid counterparty");
+        require(params.counterparty != msg.sender, "Cannot escrow with self");
+        require(params.amount > 0, "Amount must be > 0");
+        require(params.yieldSplitCounterparty <= 100, "Invalid yield split");
+        require(params.timeout >= MIN_TIMEOUT && params.timeout <= MAX_TIMEOUT, "Invalid timeout");
 
         dealCount++;
         deals[dealCount] = Deal({
             id: dealCount,
             depositor: msg.sender,
-            counterparty: counterparty,
-            amount: amount,
-            yieldSplitCounterparty: yieldSplitCounterparty,
+            counterparty: params.counterparty,
+            amount: params.amount,
+            yieldSplitCounterparty: params.yieldSplitCounterparty,
             status: DealStatus.Created,
-            timeout: timeout,
-            dealHash: dealHash,
+            timeout: params.timeout,
+            dealHash: params.dealHash,
             createdAt: block.timestamp,
             fundedAt: 0,
             disputedAt: 0
         });
 
-        emit DealCreated(dealCount, msg.sender, counterparty, amount, dealHash);
+        emit DealCreated(dealCount, msg.sender, params.counterparty, params.amount, params.dealHash);
         return dealCount;
     }
 
@@ -209,12 +213,14 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
 
         token.approve(address(settlement), total);
         settlement.settle(
-            dealId,
-            deal.depositor,
-            deal.counterparty,
-            principal,
-            total,
-            deal.yieldSplitCounterparty,
+            ISettlement.SettleParams({
+                dealId: dealId,
+                depositor: deal.depositor,
+                counterparty: deal.counterparty,
+                principal: principal,
+                total: total,
+                yieldSplitCounterparty: deal.yieldSplitCounterparty
+            }),
             lifiData
         );
 
@@ -266,12 +272,14 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
 
         token.approve(address(settlement), total);
         settlement.settleWithHook(
-            dealId,
-            deal.depositor,
-            deal.counterparty,
-            principal,
-            total,
-            deal.yieldSplitCounterparty,
+            ISettlement.SettleParams({
+                dealId: dealId,
+                depositor: deal.depositor,
+                counterparty: deal.counterparty,
+                principal: principal,
+                total: total,
+                yieldSplitCounterparty: deal.yieldSplitCounterparty
+            }),
             preferredToken
         );
 

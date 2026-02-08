@@ -29,41 +29,31 @@ contract MockSettlement is ISettlement {
     SettleWithHookCall[] public settleWithHookCalls;
 
     function settle(
-        uint256 dealId,
-        address depositor,
-        address counterparty,
-        uint256 principal,
-        uint256 total,
-        uint8 yieldSplitCounterparty,
+        SettleParams calldata params,
         bytes calldata lifiData
     ) external override {
         settleCalls.push(SettleCall({
-            dealId: dealId,
-            depositor: depositor,
-            counterparty: counterparty,
-            principal: principal,
-            total: total,
-            yieldSplitCounterparty: yieldSplitCounterparty,
+            dealId: params.dealId,
+            depositor: params.depositor,
+            counterparty: params.counterparty,
+            principal: params.principal,
+            total: params.total,
+            yieldSplitCounterparty: params.yieldSplitCounterparty,
             lifiData: lifiData
         }));
     }
 
     function settleWithHook(
-        uint256 dealId,
-        address depositor,
-        address counterparty,
-        uint256 principal,
-        uint256 total,
-        uint8 yieldSplitCounterparty,
+        SettleParams calldata params,
         address preferredToken
     ) external override {
         settleWithHookCalls.push(SettleWithHookCall({
-            dealId: dealId,
-            depositor: depositor,
-            counterparty: counterparty,
-            principal: principal,
-            total: total,
-            yieldSplitCounterparty: yieldSplitCounterparty,
+            dealId: params.dealId,
+            depositor: params.depositor,
+            counterparty: params.counterparty,
+            principal: params.principal,
+            total: params.total,
+            yieldSplitCounterparty: params.yieldSplitCounterparty,
             preferredToken: preferredToken
         }));
     }

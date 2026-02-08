@@ -136,34 +136,41 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "dealId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "depositor",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "counterparty",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "principal",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "total",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint8",
-        "name": "yieldSplitCounterparty",
-        "type": "uint8"
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "dealId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "depositor",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "counterparty",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "principal",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "total",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "yieldSplitCounterparty",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct ISettlement.SettleParams",
+        "name": "params",
+        "type": "tuple"
       },
       {
         "internalType": "bytes",
@@ -179,34 +186,41 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "dealId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "depositor",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "counterparty",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "principal",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "total",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint8",
-        "name": "yieldSplitCounterparty",
-        "type": "uint8"
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "dealId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "depositor",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "counterparty",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "principal",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "total",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "yieldSplitCounterparty",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct ISettlement.SettleParams",
+        "name": "params",
+        "type": "tuple"
       },
       {
         "internalType": "address",

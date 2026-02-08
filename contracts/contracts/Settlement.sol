@@ -52,27 +52,22 @@ contract Settlement is ISettlement {
 
     /// @inheritdoc ISettlement
     function settle(
-        uint256 dealId,
-        address depositor,
-        address counterparty,
-        uint256 principal,
-        uint256 total,
-        uint8 yieldSplitCounterparty,
+        SettleParams calldata params,
         bytes calldata lifiData
     ) external override {
-        require(principal > 0, "Principal must be > 0");
-        require(total >= principal, "Total less than principal");
-        require(yieldSplitCounterparty <= 100, "Invalid yield split");
+        require(params.principal > 0, "Principal must be > 0");
+        require(params.total >= params.principal, "Total less than principal");
+        require(params.yieldSplitCounterparty <= 100, "Invalid yield split");
 
         // Pull tokens from caller (escrow)
-        token.safeTransferFrom(msg.sender, address(this), total);
+        token.safeTransferFrom(msg.sender, address(this), params.total);
 
         // Calculate yield and split
-        uint256 yieldAmount = total - principal;
-        uint256 counterpartyYield = (yieldAmount * yieldSplitCounterparty) / 100;
+        uint256 yieldAmount = params.total - params.principal;
+        uint256 counterpartyYield = (yieldAmount * params.yieldSplitCounterparty) / 100;
         uint256 depositorYield = yieldAmount - counterpartyYield;
 
-        uint256 counterpartyPayout = principal + counterpartyYield;
+        uint256 counterpartyPayout = params.principal + counterpartyYield;
         uint256 depositorPayout = depositorYield;
 
         // Pay counterparty (principal + their yield share)
@@ -88,65 +83,52 @@ contract Settlement is ISettlement {
                 require(balBefore - balAfter == counterpartyPayout, "LI.FI amount mismatch");
                 token.approve(lifiDiamond, 0);
             } else {
-                token.safeTransfer(counterparty, counterpartyPayout);
+                token.safeTransfer(params.counterparty, counterpartyPayout);
             }
         }
 
         // Pay depositor their yield share
         if (depositorPayout > 0) {
-            token.safeTransfer(depositor, depositorPayout);
+            token.safeTransfer(params.depositor, depositorPayout);
         }
 
-        emit DealSettled(dealId, depositor, counterparty, counterpartyPayout, depositorPayout);
+        emit DealSettled(params.dealId, params.depositor, params.counterparty, counterpartyPayout, depositorPayout);
     }
 
-    /// @notice Settle with yield swapped to counterparty's preferred token via hook
-    /// @param dealId The deal identifier
-    /// @param depositor The depositor address
-    /// @param counterparty The counterparty address
-    /// @param principal The original deposited amount
-    /// @param total The total withdrawn amount (principal + yield)
-    /// @param yieldSplitCounterparty Percentage of yield going to counterparty (0-100)
-    /// @param preferredToken The token counterparty wants their yield in
     /// @inheritdoc ISettlement
     function settleWithHook(
-        uint256 dealId,
-        address depositor,
-        address counterparty,
-        uint256 principal,
-        uint256 total,
-        uint8 yieldSplitCounterparty,
+        SettleParams calldata params,
         address preferredToken
     ) external override {
-        require(principal > 0, "Principal must be > 0");
-        require(total >= principal, "Total less than principal");
-        require(yieldSplitCounterparty <= 100, "Invalid yield split");
+        require(params.principal > 0, "Principal must be > 0");
+        require(params.total >= params.principal, "Total less than principal");
+        require(params.yieldSplitCounterparty <= 100, "Invalid yield split");
         require(address(hook) != address(0), "Hook not configured");
 
         // Pull tokens from caller (escrow)
-        token.safeTransferFrom(msg.sender, address(this), total);
+        token.safeTransferFrom(msg.sender, address(this), params.total);
 
         // Calculate yield and split
-        uint256 yieldAmount = total - principal;
-        uint256 counterpartyYield = (yieldAmount * yieldSplitCounterparty) / 100;
+        uint256 yieldAmount = params.total - params.principal;
+        uint256 counterpartyYield = (yieldAmount * params.yieldSplitCounterparty) / 100;
         uint256 depositorYield = yieldAmount - counterpartyYield;
 
         // Send principal directly to counterparty in USDC
-        if (principal > 0) {
-            token.safeTransfer(counterparty, principal);
+        if (params.principal > 0) {
+            token.safeTransfer(params.counterparty, params.principal);
         }
 
         // Route counterparty's yield through hook for swap
         if (counterpartyYield > 0) {
             token.approve(address(hook), counterpartyYield);
-            hook.settleWithSwap(counterparty, counterpartyYield, preferredToken);
+            hook.settleWithSwap(params.counterparty, counterpartyYield, preferredToken);
         }
 
         // Pay depositor their yield share in USDC
         if (depositorYield > 0) {
-            token.safeTransfer(depositor, depositorYield);
+            token.safeTransfer(params.depositor, depositorYield);
         }
 
-        emit DealSettled(dealId, depositor, counterparty, principal + counterpartyYield, depositorYield);
+        emit DealSettled(params.dealId, params.depositor, params.counterparty, params.principal + counterpartyYield, depositorYield);
     }
 }

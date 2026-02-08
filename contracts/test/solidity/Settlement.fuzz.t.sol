@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "../../contracts/Settlement.sol";
+import "../../contracts/interfaces/ISettlement.sol";
 import "../../contracts/mocks/MockERC20.sol";
 
 contract SettlementFuzzTest is Test {
@@ -39,7 +40,14 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        settlement.settle(1, depositor, counterparty, principal, total, yieldSplitCounterparty, "");
+        settlement.settle(ISettlement.SettleParams({
+            dealId: 1,
+            depositor: depositor,
+            counterparty: counterparty,
+            principal: principal,
+            total: total,
+            yieldSplitCounterparty: yieldSplitCounterparty
+        }), "");
 
         uint256 counterpartyBal = usdc.balanceOf(counterparty);
         uint256 depositorBal = usdc.balanceOf(depositor);
@@ -65,7 +73,14 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        settlement.settle(1, depositor, counterparty, principal, total, yieldSplitCounterparty, "");
+        settlement.settle(ISettlement.SettleParams({
+            dealId: 1,
+            depositor: depositor,
+            counterparty: counterparty,
+            principal: principal,
+            total: total,
+            yieldSplitCounterparty: yieldSplitCounterparty
+        }), "");
 
         uint256 counterpartyBal = usdc.balanceOf(counterparty);
         assertGe(counterpartyBal, principal, "counterparty must get at least principal");
@@ -86,7 +101,14 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        settlement.settle(1, depositor, counterparty, principal, total, yieldSplitCounterparty, "");
+        settlement.settle(ISettlement.SettleParams({
+            dealId: 1,
+            depositor: depositor,
+            counterparty: counterparty,
+            principal: principal,
+            total: total,
+            yieldSplitCounterparty: yieldSplitCounterparty
+        }), "");
 
         uint256 depositorBal = usdc.balanceOf(depositor);
         uint256 expectedDepositorYield = yieldAmount - (yieldAmount * yieldSplitCounterparty) / 100;
@@ -106,7 +128,14 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        settlement.settle(1, depositor, counterparty, principal, total, 0, "");
+        settlement.settle(ISettlement.SettleParams({
+            dealId: 1,
+            depositor: depositor,
+            counterparty: counterparty,
+            principal: principal,
+            total: total,
+            yieldSplitCounterparty: 0
+        }), "");
 
         assertEq(usdc.balanceOf(counterparty), principal, "counterparty gets only principal at 0% split");
         assertEq(usdc.balanceOf(depositor), yieldAmount, "depositor gets all yield at 0% split");
@@ -125,7 +154,14 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        settlement.settle(1, depositor, counterparty, principal, total, 100, "");
+        settlement.settle(ISettlement.SettleParams({
+            dealId: 1,
+            depositor: depositor,
+            counterparty: counterparty,
+            principal: principal,
+            total: total,
+            yieldSplitCounterparty: 100
+        }), "");
 
         assertEq(usdc.balanceOf(counterparty), total, "counterparty gets everything at 100% split");
         assertEq(usdc.balanceOf(depositor), 0, "depositor gets nothing at 100% split");
@@ -142,7 +178,14 @@ contract SettlementFuzzTest is Test {
         usdc.approve(address(settlement), total);
 
         vm.expectRevert("Invalid yield split");
-        settlement.settle(1, depositor, counterparty, principal, total, badSplit, "");
+        settlement.settle(ISettlement.SettleParams({
+            dealId: 1,
+            depositor: depositor,
+            counterparty: counterparty,
+            principal: principal,
+            total: total,
+            yieldSplitCounterparty: badSplit
+        }), "");
     }
 
     /// @notice Fuzz: total less than principal always reverts
@@ -157,6 +200,13 @@ contract SettlementFuzzTest is Test {
         usdc.approve(address(settlement), total);
 
         vm.expectRevert("Total less than principal");
-        settlement.settle(1, depositor, counterparty, principal, total, 50, "");
+        settlement.settle(ISettlement.SettleParams({
+            dealId: 1,
+            depositor: depositor,
+            counterparty: counterparty,
+            principal: principal,
+            total: total,
+            yieldSplitCounterparty: 50
+        }), "");
     }
 }

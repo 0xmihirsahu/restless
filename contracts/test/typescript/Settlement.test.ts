@@ -54,12 +54,14 @@ describe("Settlement", function () {
 
       // settle: 100% yield to counterparty
       await settlement.write.settle([
-        1n,
-        depositor.account.address,
-        counterparty.account.address,
-        principal,
-        totalAmount,
-        100, // 100% yield to counterparty
+        {
+          dealId: 1n,
+          depositor: depositor.account.address,
+          counterparty: counterparty.account.address,
+          principal: principal,
+          total: totalAmount,
+          yieldSplitCounterparty: 100,
+        },
         "0x", // no lifi data (same chain)
       ]);
 
@@ -83,12 +85,14 @@ describe("Settlement", function () {
 
       // settle: 50% yield to counterparty
       await settlement.write.settle([
-        1n,
-        depositor.account.address,
-        counterparty.account.address,
-        principal,
-        totalAmount,
-        50, // 50% yield to counterparty
+        {
+          dealId: 1n,
+          depositor: depositor.account.address,
+          counterparty: counterparty.account.address,
+          principal: principal,
+          total: totalAmount,
+          yieldSplitCounterparty: 50,
+        },
         "0x",
       ]);
 
@@ -114,12 +118,14 @@ describe("Settlement", function () {
 
       // settle: 0% yield to counterparty
       await settlement.write.settle([
-        1n,
-        depositor.account.address,
-        counterparty.account.address,
-        principal,
-        totalAmount,
-        0, // 0% yield to counterparty
+        {
+          dealId: 1n,
+          depositor: depositor.account.address,
+          counterparty: counterparty.account.address,
+          principal: principal,
+          total: totalAmount,
+          yieldSplitCounterparty: 0,
+        },
         "0x",
       ]);
 
@@ -143,12 +149,14 @@ describe("Settlement", function () {
 
       // settle: total == principal (no yield)
       await settlement.write.settle([
-        1n,
-        depositor.account.address,
-        counterparty.account.address,
-        principal,
-        principal, // total == principal, no yield
-        100,
+        {
+          dealId: 1n,
+          depositor: depositor.account.address,
+          counterparty: counterparty.account.address,
+          principal: principal,
+          total: principal, // total == principal, no yield
+          yieldSplitCounterparty: 100,
+        },
         "0x",
       ]);
 
@@ -171,12 +179,14 @@ describe("Settlement", function () {
 
       await viem.assertions.revertWith(
         settlement.write.settle([
-          1n,
-          depositor.account.address,
-          counterparty.account.address,
-          principal,
-          badTotal,
-          100,
+          {
+            dealId: 1n,
+            depositor: depositor.account.address,
+            counterparty: counterparty.account.address,
+            principal: principal,
+            total: badTotal,
+            yieldSplitCounterparty: 100,
+          },
           "0x",
         ]),
         "Total less than principal"
@@ -192,12 +202,14 @@ describe("Settlement", function () {
 
       await viem.assertions.revertWith(
         settlement.write.settle([
-          1n,
-          depositor.account.address,
-          counterparty.account.address,
-          principal,
-          totalAmount,
-          101, // invalid
+          {
+            dealId: 1n,
+            depositor: depositor.account.address,
+            counterparty: counterparty.account.address,
+            principal: principal,
+            total: totalAmount,
+            yieldSplitCounterparty: 101,
+          },
           "0x",
         ]),
         "Invalid yield split"
@@ -213,12 +225,14 @@ describe("Settlement", function () {
 
       await viem.assertions.revertWith(
         settlement.write.settle([
-          1n,
-          depositor.account.address,
-          counterparty.account.address,
-          0n, // zero principal
-          totalAmount,
-          100,
+          {
+            dealId: 1n,
+            depositor: depositor.account.address,
+            counterparty: counterparty.account.address,
+            principal: 0n,
+            total: totalAmount,
+            yieldSplitCounterparty: 100,
+          },
           "0x",
         ]),
         "Principal must be > 0"
@@ -235,12 +249,14 @@ describe("Settlement", function () {
       await token.write.approve([settlement.address, totalAmount]);
 
       const hash = await settlement.write.settle([
-        1n,
-        depositor.account.address,
-        counterparty.account.address,
-        principal,
-        totalAmount,
-        100,
+        {
+          dealId: 1n,
+          depositor: depositor.account.address,
+          counterparty: counterparty.account.address,
+          principal: principal,
+          total: totalAmount,
+          yieldSplitCounterparty: 100,
+        },
         "0x",
       ]);
 
@@ -324,12 +340,14 @@ describe("Settlement", function () {
       });
 
       await settlement.write.settle([
-        1n,
-        depositor.account.address,
-        counterparty.account.address,
-        principal,
-        totalAmount,
-        100,
+        {
+          dealId: 1n,
+          depositor: depositor.account.address,
+          counterparty: counterparty.account.address,
+          principal: principal,
+          total: totalAmount,
+          yieldSplitCounterparty: 100,
+        },
         lifiData,
       ]);
 
@@ -378,12 +396,14 @@ describe("Settlement", function () {
       });
 
       await settlement.write.settle([
-        1n,
-        depositor.account.address,
-        counterparty.account.address,
-        principal,
-        totalAmount,
-        50,
+        {
+          dealId: 1n,
+          depositor: depositor.account.address,
+          counterparty: counterparty.account.address,
+          principal: principal,
+          total: totalAmount,
+          yieldSplitCounterparty: 50,
+        },
         lifiData,
       ]);
 
@@ -408,12 +428,14 @@ describe("Settlement", function () {
 
       await viem.assertions.revertWith(
         settlement.write.settle([
-          1n,
-          depositor.account.address,
-          counterparty.account.address,
-          principal,
-          totalAmount,
-          100,
+          {
+            dealId: 1n,
+            depositor: depositor.account.address,
+            counterparty: counterparty.account.address,
+            principal: principal,
+            total: totalAmount,
+            yieldSplitCounterparty: 100,
+          },
           badLifiData,
         ]),
         "LI.FI bridge failed"
@@ -494,12 +516,14 @@ describe("Settlement", function () {
 
       await viem.assertions.revertWith(
         settlement.write.settle([
-          1n,
-          depositor.account.address,
-          counterparty.account.address,
-          principal,
-          totalAmount,
-          100,
+          {
+            dealId: 1n,
+            depositor: depositor.account.address,
+            counterparty: counterparty.account.address,
+            principal: principal,
+            total: totalAmount,
+            yieldSplitCounterparty: 100,
+          },
           lifiData,
         ]),
         "LI.FI amount mismatch"
@@ -556,12 +580,14 @@ describe("Settlement", function () {
       });
 
       await settlement.write.settle([
-        1n,
-        depositor.account.address,
-        counterparty.account.address,
-        principal,
-        totalAmount,
-        100,
+        {
+          dealId: 1n,
+          depositor: depositor.account.address,
+          counterparty: counterparty.account.address,
+          principal: principal,
+          total: totalAmount,
+          yieldSplitCounterparty: 100,
+        },
         lifiData,
       ]);
 
@@ -646,12 +672,14 @@ describe("Settlement", function () {
 
       // settle with 100% yield to counterparty, preferred token = WETH
       await settlement.write.settleWithHook([
-        1n,
-        depositor.account.address,
-        counterparty.account.address,
-        principal,
-        totalAmount,
-        100,
+        {
+          dealId: 1n,
+          depositor: depositor.account.address,
+          counterparty: counterparty.account.address,
+          principal: principal,
+          total: totalAmount,
+          yieldSplitCounterparty: 100,
+        },
         weth.address, // preferredToken
       ]);
 
@@ -676,12 +704,14 @@ describe("Settlement", function () {
 
       // 50% yield split with hook
       await settlement.write.settleWithHook([
-        1n,
-        depositor.account.address,
-        counterparty.account.address,
-        principal,
-        totalAmount,
-        50,
+        {
+          dealId: 1n,
+          depositor: depositor.account.address,
+          counterparty: counterparty.account.address,
+          principal: principal,
+          total: totalAmount,
+          yieldSplitCounterparty: 50,
+        },
         weth.address,
       ]);
 
@@ -720,12 +750,14 @@ describe("Settlement", function () {
 
       await viem.assertions.revertWith(
         settlement.write.settleWithHook([
-          1n,
-          depositor.account.address,
-          counterparty.account.address,
-          principal,
-          total,
-          100,
+          {
+            dealId: 1n,
+            depositor: depositor.account.address,
+            counterparty: counterparty.account.address,
+            principal: principal,
+            total: total,
+            yieldSplitCounterparty: 100,
+          },
           weth.address,
         ]),
         "Hook not configured"

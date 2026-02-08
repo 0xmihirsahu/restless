@@ -15,7 +15,7 @@ const abi = parseAbi([
   "function owner() view returns (address)",
   "function token() view returns (address)",
   "function getDeal(uint256) view returns ((uint256 id, address depositor, address counterparty, uint256 amount, uint8 yieldSplitCounterparty, uint8 status, uint256 timeout, bytes32 dealHash, uint256 createdAt, uint256 fundedAt, uint256 disputedAt))",
-  "function createDeal(address,uint256,uint8,uint256,bytes32) returns (uint256)",
+  "function createDeal((address counterparty, uint256 amount, uint8 yieldSplitCounterparty, uint256 timeout, bytes32 dealHash) params) returns (uint256)",
   "function fundDeal(uint256)",
 ]);
 
@@ -50,7 +50,7 @@ const dealHash = keccak256(toHex("debug test"));
 
 const createHash = await deployer.writeContract({
   address: ESCROW, abi, functionName: "createDeal",
-  args: [counterparty, amount, 100, 86400n, dealHash],
+  args: [{ counterparty, amount, yieldSplitCounterparty: 100, timeout: 86400n, dealHash }] as const,
   chain: deployer.chain,
 });
 console.log("createDeal tx:", createHash);

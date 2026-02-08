@@ -140,7 +140,7 @@ const escrowAbi = parseAbi([
   "function dealCount() view returns (uint256)",
   "function getDeal(uint256) view returns ((uint256 id, address depositor, address counterparty, uint256 amount, uint8 yieldSplitCounterparty, uint8 status, uint256 timeout, bytes32 dealHash, uint256 createdAt, uint256 fundedAt, uint256 disputedAt))",
   "function getAccruedYield(uint256) view returns (uint256)",
-  "function createDeal(address,uint256,uint8,uint256,bytes32) returns (uint256)",
+  "function createDeal((address counterparty, uint256 amount, uint8 yieldSplitCounterparty, uint256 timeout, bytes32 dealHash) params) returns (uint256)",
   "function fundDeal(uint256)",
   "function settleDeal(uint256,bytes)",
 ]);
@@ -250,7 +250,7 @@ const createHash = await deployer.writeContract({
   address: config.escrow,
   abi: escrowAbi,
   functionName: "createDeal",
-  args: [counterparty, DEAL_AMOUNT, yieldSplit, timeout, dealHash],
+  args: [{ counterparty, amount: DEAL_AMOUNT, yieldSplitCounterparty: yieldSplit, timeout, dealHash }] as const,
   chain: deployer.chain,
 });
 logTx("Create Deal", createHash);

@@ -73,7 +73,7 @@ const aavePoolAbi = parseAbi([
 ]);
 
 const escrowAbi = parseAbi([
-  "function createDeal(address,uint256,uint8,uint256,bytes32) returns (uint256)",
+  "function createDeal((address counterparty, uint256 amount, uint8 yieldSplitCounterparty, uint256 timeout, bytes32 dealHash) params) returns (uint256)",
   "function fundDeal(uint256)",
   "function settleDealWithHook(uint256,address)",
   "function getDeal(uint256) view returns ((uint256 id, address depositor, address counterparty, uint256 amount, uint8 yieldSplitCounterparty, uint8 status, uint256 timeout, bytes32 dealHash, uint256 createdAt, uint256 fundedAt, uint256 disputedAt))",
@@ -139,7 +139,7 @@ await waitForTx(appHash);
 const dealHash = keccak256(toHex(`restless demo ${Date.now()}`));
 const createHash = await deployer.writeContract({
   address: ESCROW, abi: escrowAbi, functionName: "createDeal",
-  args: [counterparty, DEAL_AMOUNT, 100, 86400n, dealHash],
+  args: [{ counterparty, amount: DEAL_AMOUNT, yieldSplitCounterparty: 100, timeout: 86400n, dealHash }] as const,
   chain: deployer.chain,
 });
 logTx("Create Deal", createHash);

@@ -93,11 +93,13 @@ describe("Integration: Full Deal Lifecycle", function () {
 
     // 1. Create deal (100% yield to counterparty)
     await escrowAsDepositor.write.createDeal([
-      counterparty.account.address,
-      amount,
-      100,
-      86400n,
-      dealHash,
+      {
+        counterparty: counterparty.account.address,
+        amount: amount,
+        yieldSplitCounterparty: 100,
+        timeout: 86400n,
+        dealHash: dealHash,
+      },
     ]);
 
     // 2. Fund deal
@@ -140,11 +142,13 @@ describe("Integration: Full Deal Lifecycle", function () {
 
     // 1. Create + fund
     await escrowAsDepositor.write.createDeal([
-      counterparty.account.address,
-      amount,
-      100, // 100% yield to counterparty
-      86400n,
-      dealHash,
+      {
+        counterparty: counterparty.account.address,
+        amount: amount,
+        yieldSplitCounterparty: 100,
+        timeout: 86400n,
+        dealHash: dealHash,
+      },
     ]);
     await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -182,11 +186,13 @@ describe("Integration: Full Deal Lifecycle", function () {
 
     // 1. Create deal with 50% yield split
     await escrowAsDepositor.write.createDeal([
-      counterparty.account.address,
-      amount,
-      50, // 50% yield to counterparty
-      86400n,
-      dealHash,
+      {
+        counterparty: counterparty.account.address,
+        amount: amount,
+        yieldSplitCounterparty: 50,
+        timeout: 86400n,
+        dealHash: dealHash,
+      },
     ]);
     await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -238,11 +244,13 @@ describe("Integration: Full Deal Lifecycle", function () {
 
     // 1. Create deal with 100% yield to counterparty
     await escrowAsDepositor.write.createDeal([
-      counterparty.account.address,
-      amount,
-      100,
-      86400n,
-      dealHash,
+      {
+        counterparty: counterparty.account.address,
+        amount: amount,
+        yieldSplitCounterparty: 100,
+        timeout: 86400n,
+        dealHash: dealHash,
+      },
     ]);
     await escrowAsDepositor.write.fundDeal([1n]);
 
@@ -285,11 +293,13 @@ describe("Integration: Full Deal Lifecycle", function () {
 
     // 1. Create + fund
     await escrowAsDepositor.write.createDeal([
-      counterparty.account.address,
-      amount,
-      100,
-      86400n,
-      dealHash,
+      {
+        counterparty: counterparty.account.address,
+        amount: amount,
+        yieldSplitCounterparty: 100,
+        timeout: 86400n,
+        dealHash: dealHash,
+      },
     ]);
     await escrowAsDepositor.write.fundDeal([1n]);
 

@@ -42,13 +42,13 @@ contract RestlessEscrowFuzzTest is Test {
         timeout = bound(timeout, 1 days, 30 days);
 
         vm.prank(depositor);
-        uint256 id = escrow.createDeal(
-            counterparty,
-            amount,
-            yieldSplit,
-            timeout,
-            keccak256("fuzz-deal")
-        );
+        uint256 id = escrow.createDeal(RestlessEscrow.CreateDealParams({
+            counterparty: counterparty,
+            amount: amount,
+            yieldSplitCounterparty: yieldSplit,
+            timeout: timeout,
+            dealHash: keccak256("fuzz-deal")
+        }));
 
         assertEq(id, 1);
         RestlessEscrow.Deal memory deal = escrow.getDeal(id);
@@ -63,9 +63,13 @@ contract RestlessEscrowFuzzTest is Test {
         amount = bound(amount, 1, 1_000_000_000e6); // up to 1B USDC
 
         vm.prank(depositor);
-        uint256 dealId = escrow.createDeal(
-            counterparty, amount, 50, 7 days, keccak256("fuzz-fund")
-        );
+        uint256 dealId = escrow.createDeal(RestlessEscrow.CreateDealParams({
+            counterparty: counterparty,
+            amount: amount,
+            yieldSplitCounterparty: 50,
+            timeout: 7 days,
+            dealHash: keccak256("fuzz-fund")
+        }));
 
         usdc.mint(depositor, amount);
         vm.startPrank(depositor);
@@ -93,9 +97,13 @@ contract RestlessEscrowFuzzTest is Test {
         usdc.mint(address(adapter), mockYield);
 
         vm.prank(depositor);
-        uint256 dealId = escrow.createDeal(
-            counterparty, amount, 50, timeout, keccak256("fuzz-timeout")
-        );
+        uint256 dealId = escrow.createDeal(RestlessEscrow.CreateDealParams({
+            counterparty: counterparty,
+            amount: amount,
+            yieldSplitCounterparty: 50,
+            timeout: timeout,
+            dealHash: keccak256("fuzz-timeout")
+        }));
 
         usdc.mint(depositor, amount);
         vm.startPrank(depositor);
@@ -119,6 +127,12 @@ contract RestlessEscrowFuzzTest is Test {
 
         vm.prank(depositor);
         vm.expectRevert("Invalid timeout");
-        escrow.createDeal(counterparty, 1000e6, 50, timeout, keccak256("bad-timeout"));
+        escrow.createDeal(RestlessEscrow.CreateDealParams({
+            counterparty: counterparty,
+            amount: 1000e6,
+            yieldSplitCounterparty: 50,
+            timeout: timeout,
+            dealHash: keccak256("bad-timeout")
+        }));
     }
 }

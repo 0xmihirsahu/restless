@@ -37,7 +37,13 @@ export function useCreateDeal() {
       address: CONTRACTS.escrow,
       abi: restlessEscrowAbi,
       functionName: "createDeal",
-      args: [params.counterparty, amountParsed, params.yieldSplitCounterparty, timeout, dealHash],
+      args: [{
+        counterparty: params.counterparty,
+        amount: amountParsed,
+        yieldSplitCounterparty: params.yieldSplitCounterparty,
+        timeout: timeout,
+        dealHash: dealHash,
+      }],
     }, {
       onSuccess: () => toast.success("Deal created! Now fund it to start earning yield."),
       onError: (err) => toast.error(err.message.slice(0, 100)),

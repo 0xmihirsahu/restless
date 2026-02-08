@@ -91,9 +91,10 @@ describe("AaveYieldAdapter", function () {
 
       await adapter.write.setEscrow([escrowSigner.account.address]);
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         adapter.write.setEscrow([escrowSigner.account.address]),
-        "Escrow already set"
+        adapter,
+        "EscrowAlreadySet"
       );
     });
 
@@ -116,9 +117,10 @@ describe("AaveYieldAdapter", function () {
         { client: { wallet: stranger } }
       );
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         adapterAsStranger.write.setEscrow([stranger.account.address]),
-        "Only owner"
+        adapter,
+        "OnlyOwner"
       );
     });
   });
@@ -158,9 +160,10 @@ describe("AaveYieldAdapter", function () {
       });
       await usdcAsEscrow.write.approve([adapterAsEscrow.address, amount]);
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         adapterAsEscrow.write.deposit([1n, amount]),
-        "Deal already deposited"
+        adapterAsEscrow,
+        "DealAlreadyDeposited"
       );
     });
 
@@ -169,9 +172,10 @@ describe("AaveYieldAdapter", function () {
         await networkHelpers.loadFixture(deployFixture);
 
       // deployer is not the escrow
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         adapter.write.deposit([1n, amount]),
-        "Only escrow"
+        adapter,
+        "OnlyEscrow"
       );
     });
   });
@@ -214,9 +218,10 @@ describe("AaveYieldAdapter", function () {
       const { adapterAsEscrow } =
         await networkHelpers.loadFixture(deployFixture);
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         adapterAsEscrow.write.withdraw([99n]),
-        "No active deposit"
+        adapterAsEscrow,
+        "NoActiveDeposit"
       );
     });
   });

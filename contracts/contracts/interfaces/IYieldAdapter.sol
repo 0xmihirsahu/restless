@@ -4,6 +4,15 @@ pragma solidity ^0.8.24;
 /// @title IYieldAdapter
 /// @notice Interface for yield-generating adapters (Aave, Morpho, etc.)
 interface IYieldAdapter {
+    error InvalidToken();
+    error InvalidAmount();
+    error DealAlreadyDeposited();
+    error NoActiveDeposit();
+    error OnlyEscrow();
+    error OnlyOwner();
+    error EscrowAlreadySet();
+    error InvalidEscrow();
+
     event Deposited(uint256 indexed dealId, uint256 amount, uint256 aTokenReceived);
     event Withdrawn(uint256 indexed dealId, uint256 principal, uint256 total);
 

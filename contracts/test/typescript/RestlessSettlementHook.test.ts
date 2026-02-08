@@ -101,13 +101,14 @@ describe("MockRestlessSettlementHook", function () {
         await networkHelpers.loadFixture(deployFixture);
 
       // deployer is not the settlement
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         hook.write.settleWithSwap([
           recipient.account.address,
           yieldAmount,
           weth.address,
         ]),
-        "Only settlement"
+        hook,
+        "OnlySettlement"
       );
     });
 
@@ -118,13 +119,14 @@ describe("MockRestlessSettlementHook", function () {
       // Random address as unknown token
       const unknownToken = "0x0000000000000000000000000000000000000001";
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         hookAsSettlement.write.settleWithSwap([
           recipient.account.address,
           yieldAmount,
           unknownToken,
         ]),
-        "No swap rate configured"
+        hookAsSettlement,
+        "NoSwapRate"
       );
     });
 
@@ -132,13 +134,14 @@ describe("MockRestlessSettlementHook", function () {
       const { hookAsSettlement, weth, recipient } =
         await networkHelpers.loadFixture(deployFixture);
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         hookAsSettlement.write.settleWithSwap([
           recipient.account.address,
           0n,
           weth.address,
         ]),
-        "Amount must be > 0"
+        hookAsSettlement,
+        "InvalidAmount"
       );
     });
   });

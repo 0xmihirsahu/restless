@@ -14,14 +14,20 @@ contract Settlement is ISettlement {
     address public immutable lifiDiamond;
     address public immutable owner;
     IRestlessSettlementHook public hook;
+    address public escrow;
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner");
+        if (msg.sender != owner) revert OnlyOwner();
+        _;
+    }
+
+    modifier onlyEscrow() {
+        if (msg.sender != escrow) revert OnlyEscrow();
         _;
     }
 
     constructor(address _token, address _lifiDiamond, address _hook) {
-        require(_token != address(0), "Invalid token");
+        if (_token == address(0)) revert InvalidToken();
 
         token = IERC20(_token);
         lifiDiamond = _lifiDiamond;
@@ -30,6 +36,11 @@ contract Settlement is ISettlement {
         if (_hook != address(0)) {
             hook = IRestlessSettlementHook(_hook);
         }
+    }
+
+    function setEscrow(address _escrow) external onlyOwner {
+        if (_escrow == address(0)) revert InvalidEscrow();
+        escrow = _escrow;
     }
 
     function setHook(address _hook) external onlyOwner {
@@ -41,7 +52,7 @@ contract Settlement is ISettlement {
     function settle(
         SettleParams calldata params,
         bytes calldata lifiData
-    ) external override {
+    ) external override onlyEscrow {
         _validateSettleParams(params);
         token.safeTransferFrom(msg.sender, address(this), params.total);
 
@@ -67,9 +78,9 @@ contract Settlement is ISettlement {
     function settleWithHook(
         SettleParams calldata params,
         address preferredToken
-    ) external override {
+    ) external override onlyEscrow {
         _validateSettleParams(params);
-        require(address(hook) != address(0), "Hook not configured");
+        if (address(hook) == address(0)) revert HookNotConfigured();
         token.safeTransferFrom(msg.sender, address(this), params.total);
 
         (uint256 counterpartyYield, uint256 depositorYield) = _splitYield(params);
@@ -79,7 +90,7 @@ contract Settlement is ISettlement {
         }
 
         if (counterpartyYield > 0) {
-            token.approve(address(hook), counterpartyYield);
+            token.forceApprove(address(hook), counterpartyYield);
             hook.settleWithSwap(params.counterparty, counterpartyYield, preferredToken);
         }
 
@@ -91,26 +102,28 @@ contract Settlement is ISettlement {
     }
 
     function _validateSettleParams(SettleParams calldata params) internal pure {
-        require(params.principal > 0, "Principal must be > 0");
-        require(params.total >= params.principal, "Total less than principal");
-        require(params.yieldSplitCounterparty <= 100, "Invalid yield split");
+        if (params.principal == 0) revert InvalidPrincipal();
+        if (params.total < params.principal) revert TotalLessThanPrincipal();
+        if (params.yieldSplitCounterparty > 100) revert InvalidYieldSplit();
     }
 
     function _splitYield(
         SettleParams calldata params
     ) internal pure returns (uint256 counterpartyYield, uint256 depositorYield) {
-        uint256 yieldAmount = params.total - params.principal;
-        counterpartyYield = (yieldAmount * params.yieldSplitCounterparty) / 100;
-        depositorYield = yieldAmount - counterpartyYield;
+        unchecked {
+            uint256 yieldAmount = params.total - params.principal;
+            counterpartyYield = (yieldAmount * params.yieldSplitCounterparty) / 100;
+            depositorYield = yieldAmount - counterpartyYield;
+        }
     }
 
     function _bridgeViaLifi(uint256 amount, bytes calldata lifiData) internal {
-        require(lifiDiamond != address(0), "LI.FI not configured");
+        if (lifiDiamond == address(0)) revert LiFiNotConfigured();
         uint256 balBefore = token.balanceOf(address(this));
-        token.approve(lifiDiamond, amount);
+        token.forceApprove(lifiDiamond, amount);
         (bool success, ) = lifiDiamond.call(lifiData);
-        require(success, "LI.FI bridge failed");
-        require(balBefore - token.balanceOf(address(this)) == amount, "LI.FI amount mismatch");
-        token.approve(lifiDiamond, 0);
+        if (!success) revert LiFiBridgeFailed();
+        if (balBefore - token.balanceOf(address(this)) != amount) revert LiFiAmountMismatch();
+        token.forceApprove(lifiDiamond, 0);
     }
 }

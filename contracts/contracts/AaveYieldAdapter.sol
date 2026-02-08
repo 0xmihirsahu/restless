@@ -26,27 +26,25 @@ contract AaveYieldAdapter is IYieldAdapter {
     IERC20 public immutable token;
     IERC20 public immutable aToken;
     IAavePool public immutable aavePool;
-    address public owner;
+    address public immutable owner;
     address public escrow;
-    bool private escrowSet;
-
     mapping(uint256 => DepositRecord) public deposits;
     uint256 public totalDeposited;
 
     modifier onlyEscrow() {
-        require(msg.sender == escrow, "Only escrow");
+        if (msg.sender != escrow) revert OnlyEscrow();
         _;
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner");
+        if (msg.sender != owner) revert OnlyOwner();
         _;
     }
 
     constructor(address _token, address _aToken, address _aavePool) {
-        require(_token != address(0), "Invalid token");
-        require(_aToken != address(0), "Invalid aToken");
-        require(_aavePool != address(0), "Invalid pool");
+        if (_token == address(0)) revert InvalidToken();
+        if (_aToken == address(0)) revert InvalidToken();
+        if (_aavePool == address(0)) revert InvalidToken();
 
         token = IERC20(_token);
         aToken = IERC20(_aToken);
@@ -55,24 +53,23 @@ contract AaveYieldAdapter is IYieldAdapter {
     }
 
     function setEscrow(address _escrow) external onlyOwner {
-        require(!escrowSet, "Escrow already set");
-        require(_escrow != address(0), "Invalid escrow");
+        if (escrow != address(0)) revert EscrowAlreadySet();
+        if (_escrow == address(0)) revert InvalidEscrow();
 
         escrow = _escrow;
-        escrowSet = true;
 
         emit EscrowSet(_escrow);
     }
 
     /// @inheritdoc IYieldAdapter
     function deposit(uint256 dealId, uint256 amount) external onlyEscrow {
-        require(!deposits[dealId].active, "Deal already deposited");
-        require(amount > 0, "Amount must be > 0");
+        if (deposits[dealId].active) revert DealAlreadyDeposited();
+        if (amount == 0) revert InvalidAmount();
 
         uint256 aTokenBefore = aToken.balanceOf(address(this));
 
         token.safeTransferFrom(escrow, address(this), amount);
-        token.approve(address(aavePool), amount);
+        token.forceApprove(address(aavePool), amount);
         aavePool.supply(address(token), amount, address(this), 0);
 
         uint256 aTokenReceived = aToken.balanceOf(address(this)) - aTokenBefore;
@@ -91,7 +88,7 @@ contract AaveYieldAdapter is IYieldAdapter {
     /// @inheritdoc IYieldAdapter
     function withdraw(uint256 dealId) external onlyEscrow returns (uint256 total) {
         DepositRecord storage record = deposits[dealId];
-        require(record.active, "No active deposit");
+        if (!record.active) revert NoActiveDeposit();
 
         uint256 totalATokens = aToken.balanceOf(address(this));
         uint256 dealShare;
@@ -103,9 +100,9 @@ contract AaveYieldAdapter is IYieldAdapter {
         }
 
         record.active = false;
-        totalDeposited -= record.principal;
+        unchecked { totalDeposited -= record.principal; }
 
-        aToken.approve(address(aavePool), dealShare);
+        aToken.forceApprove(address(aavePool), dealShare);
         total = aavePool.withdraw(address(token), dealShare, escrow);
 
         emit Withdrawn(dealId, record.principal, total);

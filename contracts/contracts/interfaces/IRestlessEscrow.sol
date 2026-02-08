@@ -7,6 +7,17 @@ import {CreateDealParams, Deal} from "../Types.sol";
 /// @notice P2P escrow where locked funds earn yield while waiting for deal completion
 /// @dev Escrow never holds tokens directly — routes to yield adapter immediately
 interface IRestlessEscrow {
+    error InvalidCounterparty();
+    error CannotEscrowWithSelf();
+    error InvalidAmount();
+    error InvalidYieldSplit();
+    error InvalidTimeout();
+    error DealNotFound();
+    error InvalidDealStatus();
+    error Unauthorized();
+    error TimeoutNotElapsed();
+    error InvalidSignature();
+
     event DealCreated(uint256 indexed dealId, address indexed depositor, address indexed counterparty, uint256 amount, bytes32 dealHash);
     event DealFunded(uint256 indexed dealId, uint256 amount);
     event DealSettled(uint256 indexed dealId, uint256 totalPayout);

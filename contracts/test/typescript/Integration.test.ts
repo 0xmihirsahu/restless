@@ -54,6 +54,9 @@ describe("Integration: Full Deal Lifecycle", function () {
     // Link adapter to escrow
     await adapter.write.setEscrow([escrow.address]);
 
+    // Link settlement to escrow
+    await settlement.write.setEscrow([escrow.address]);
+
     // Mint USDC to depositor
     const amount = parseUnits("5000", 6);
     await usdc.write.mint([depositor.account.address, amount]);

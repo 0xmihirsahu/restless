@@ -7,6 +7,18 @@ import {SettleParams} from "../Types.sol";
 /// @notice Handles yield splitting, payout routing, cross-chain bridging (LI.FI), and yield swaps (v4 hook)
 /// @dev Called by RestlessEscrow after withdrawing funds from yield adapter
 interface ISettlement {
+    error InvalidToken();
+    error InvalidPrincipal();
+    error TotalLessThanPrincipal();
+    error InvalidYieldSplit();
+    error HookNotConfigured();
+    error LiFiNotConfigured();
+    error LiFiBridgeFailed();
+    error LiFiAmountMismatch();
+    error OnlyOwner();
+    error OnlyEscrow();
+    error InvalidEscrow();
+
     event DealSettled(
         uint256 indexed dealId,
         address indexed depositor,

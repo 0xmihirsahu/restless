@@ -95,7 +95,7 @@ describe("RestlessEscrow", function () {
         { client: { wallet: depositor } }
       );
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsDepositor.write.createDeal([
           {
             counterparty: counterparty.account.address,
@@ -105,7 +105,8 @@ describe("RestlessEscrow", function () {
             dealHash: dealHash,
           },
         ]),
-        "Amount must be > 0"
+        escrow,
+        "InvalidAmount"
       );
     });
 
@@ -119,7 +120,7 @@ describe("RestlessEscrow", function () {
         { client: { wallet: depositor } }
       );
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsDepositor.write.createDeal([
           {
             counterparty: depositor.account.address,
@@ -129,7 +130,8 @@ describe("RestlessEscrow", function () {
             dealHash: dealHash,
           },
         ]),
-        "Cannot escrow with self"
+        escrow,
+        "CannotEscrowWithSelf"
       );
     });
 
@@ -143,7 +145,7 @@ describe("RestlessEscrow", function () {
         { client: { wallet: depositor } }
       );
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsDepositor.write.createDeal([
           {
             counterparty: counterparty.account.address,
@@ -153,7 +155,8 @@ describe("RestlessEscrow", function () {
             dealHash: dealHash,
           },
         ]),
-        "Invalid yield split"
+        escrow,
+        "InvalidYieldSplit"
       );
     });
   });
@@ -215,9 +218,10 @@ describe("RestlessEscrow", function () {
         { client: { wallet: counterparty } }
       );
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsCounterparty.write.fundDeal([1n]),
-        "Only depositor can fund"
+        escrow,
+        "Unauthorized"
       );
     });
   });
@@ -283,9 +287,10 @@ describe("RestlessEscrow", function () {
         { client: { wallet: stranger } }
       );
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsStranger.write.disputeDeal([1n]),
-        "Only deal parties can dispute"
+        escrow,
+        "Unauthorized"
       );
     });
   });
@@ -382,9 +387,10 @@ describe("RestlessEscrow", function () {
         { client: { wallet: stranger } }
       );
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsStranger.write.settleDeal([1n, "0x"]),
-        "Only deal parties can settle"
+        escrow,
+        "Unauthorized"
       );
     });
 
@@ -408,9 +414,10 @@ describe("RestlessEscrow", function () {
         },
       ]);
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsDepositor.write.settleDeal([1n, "0x"]),
-        "Deal not in Funded state"
+        escrow,
+        "InvalidDealStatus"
       );
     });
   });
@@ -530,14 +537,15 @@ describe("RestlessEscrow", function () {
         message,
       });
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrow.write.settleDealSigned([
           1n,
           "0x",
           fakeSig,
           counterpartySig,
         ]),
-        "Invalid depositor signature"
+        escrow,
+        "InvalidSignature"
       );
     });
 
@@ -580,14 +588,15 @@ describe("RestlessEscrow", function () {
         message,
       });
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrow.write.settleDealSigned([
           1n,
           "0x",
           depositorSig,
           fakeSig,
         ]),
-        "Invalid counterparty signature"
+        escrow,
+        "InvalidSignature"
       );
     });
 
@@ -632,14 +641,15 @@ describe("RestlessEscrow", function () {
       });
 
       // Both signed, but with wrong dealHash — sigs won't match deal's stored hash
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrow.write.settleDealSigned([
           1n,
           "0x",
           depositorSig,
           counterpartySig,
         ]),
-        "Invalid depositor signature"
+        escrow,
+        "InvalidSignature"
       );
     });
   });
@@ -729,9 +739,10 @@ describe("RestlessEscrow", function () {
         { client: { wallet: stranger } }
       );
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsStranger.write.cancelDeal([1n]),
-        "Only deal parties can cancel"
+        escrow,
+        "Unauthorized"
       );
     });
 
@@ -756,9 +767,10 @@ describe("RestlessEscrow", function () {
       ]);
       await escrowAsDepositor.write.fundDeal([1n]);
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsDepositor.write.cancelDeal([1n]),
-        "Deal not in Created state"
+        escrow,
+        "InvalidDealStatus"
       );
     });
 
@@ -823,9 +835,10 @@ describe("RestlessEscrow", function () {
         { client: { wallet: depositor } }
       );
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsDepositor.write.pause(),
-        "Only owner"
+        escrow,
+        "OnlyOwner"
       );
     });
 
@@ -841,9 +854,10 @@ describe("RestlessEscrow", function () {
         { client: { wallet: depositor } }
       );
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsDepositor.write.unpause(),
-        "Only owner"
+        escrow,
+        "OnlyOwner"
       );
     });
 
@@ -950,9 +964,10 @@ describe("RestlessEscrow", function () {
         { client: { wallet: stranger } }
       );
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsStranger.write.settleDealWithHook([1n, "0x0000000000000000000000000000000000000001"]),
-        "Only deal parties can settle"
+        escrow,
+        "Unauthorized"
       );
     });
 
@@ -976,9 +991,10 @@ describe("RestlessEscrow", function () {
         },
       ]);
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsDepositor.write.settleDealWithHook([1n, "0x0000000000000000000000000000000000000001"]),
-        "Deal not in Funded state"
+        escrow,
+        "InvalidDealStatus"
       );
     });
   });
@@ -1046,9 +1062,10 @@ describe("RestlessEscrow", function () {
       await escrowAsDepositor.write.fundDeal([1n]);
       await escrowAsDepositor.write.disputeDeal([1n]);
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         escrowAsDepositor.write.claimTimeout([1n]),
-        "Timeout not elapsed"
+        escrow,
+        "TimeoutNotElapsed"
       );
     });
   });

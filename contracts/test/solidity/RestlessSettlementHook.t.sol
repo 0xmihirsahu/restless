@@ -109,24 +109,24 @@ contract RestlessSettlementHookTest is Test, Deployers {
 
     function test_settleWithSwap_revertsIfNotSettlement() public {
         vm.prank(address(0xDEAD));
-        vm.expectRevert("Only settlement");
+        vm.expectRevert(IRestlessSettlementHook.OnlySettlement.selector);
         hook.settleWithSwap(recipient, 1e18, outputToken);
     }
 
     function test_settleWithSwap_revertsIfZeroAmount() public {
-        vm.expectRevert("Amount must be > 0");
+        vm.expectRevert(IRestlessSettlementHook.InvalidAmount.selector);
         hook.settleWithSwap(recipient, 0, outputToken);
     }
 
     function test_settleWithSwap_revertsIfPoolNotConfigured() public {
         address unknownToken = address(0x1234);
-        vm.expectRevert("Pool not configured");
+        vm.expectRevert(IRestlessSettlementHook.PoolNotConfigured.selector);
         hook.settleWithSwap(recipient, 1e18, unknownToken);
     }
 
     function test_setPoolKey_onlyOwner() public {
         vm.prank(address(0xDEAD));
-        vm.expectRevert("Only owner");
+        vm.expectRevert(IRestlessSettlementHook.OnlyOwner.selector);
         hook.setPoolKey(address(0x999), poolKey);
     }
 
@@ -137,8 +137,6 @@ contract RestlessSettlementHookTest is Test, Deployers {
         emit IRestlessSettlementHook.PoolKeySet(token);
 
         hook.setPoolKey(token, poolKey);
-
-        assertTrue(hook.poolConfigured(token));
     }
 
     function test_hookPermissions_onlyAfterSwap() public view {
@@ -169,7 +167,7 @@ contract RestlessSettlementHookTest is Test, Deployers {
 
     function test_unlockCallback_revertsIfNotPoolManager() public {
         vm.prank(address(0xDEAD));
-        vm.expectRevert("Only pool manager");
+        vm.expectRevert(IRestlessSettlementHook.OnlyPoolManager.selector);
         hook.unlockCallback(new bytes(0));
     }
 }

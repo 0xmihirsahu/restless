@@ -32,6 +32,7 @@ contract SettlementTest is Test {
             address(0), // no LI.FI
             address(0)  // no hook
         );
+        settlement.setEscrow(address(this));
     }
 
     function test_settle_100pct_yield_to_counterparty() public {
@@ -103,7 +104,7 @@ contract SettlementTest is Test {
         uint256 badTotal = PRINCIPAL - 100e6;
         _mintAndApprove(badTotal);
 
-        vm.expectRevert("Total less than principal");
+        vm.expectRevert(ISettlement.TotalLessThanPrincipal.selector);
         settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
@@ -117,7 +118,7 @@ contract SettlementTest is Test {
     function test_revert_invalid_yield_split() public {
         _mintAndApprove(TOTAL);
 
-        vm.expectRevert("Invalid yield split");
+        vm.expectRevert(ISettlement.InvalidYieldSplit.selector);
         settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
@@ -131,7 +132,7 @@ contract SettlementTest is Test {
     function test_revert_zero_principal() public {
         _mintAndApprove(TOTAL);
 
-        vm.expectRevert("Principal must be > 0");
+        vm.expectRevert(ISettlement.InvalidPrincipal.selector);
         settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
@@ -149,6 +150,7 @@ contract SettlementTest is Test {
             address(badDiamond),
             address(0)
         );
+        lifiSettlement.setEscrow(address(this));
 
         usdc.mint(address(this), TOTAL);
         usdc.approve(address(lifiSettlement), TOTAL);
@@ -159,7 +161,7 @@ contract SettlementTest is Test {
             address(usdc), TOTAL, counterparty, 421614
         );
 
-        vm.expectRevert("LI.FI amount mismatch");
+        vm.expectRevert(ISettlement.LiFiAmountMismatch.selector);
         lifiSettlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
@@ -177,6 +179,7 @@ contract SettlementTest is Test {
             address(diamond),
             address(0)
         );
+        lifiSettlement.setEscrow(address(this));
 
         usdc.mint(address(this), TOTAL);
         usdc.approve(address(lifiSettlement), TOTAL);
@@ -206,6 +209,7 @@ contract SettlementTest is Test {
             address(diamond),
             address(0)
         );
+        lifiSettlement.setEscrow(address(this));
 
         usdc.mint(address(this), TOTAL);
         usdc.approve(address(lifiSettlement), TOTAL);
@@ -247,7 +251,7 @@ contract SettlementTest is Test {
     function test_settleWithHook_revert_no_hook() public {
         _mintAndApprove(TOTAL);
 
-        vm.expectRevert("Hook not configured");
+        vm.expectRevert(ISettlement.HookNotConfigured.selector);
         settlement.settleWithHook(SettleParams({
             dealId: 1,
             depositor: depositor,

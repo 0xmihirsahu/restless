@@ -5,6 +5,15 @@ pragma solidity ^0.8.24;
 /// @notice Uniswap v4 hook that swaps yield tokens to a recipient's preferred token
 /// @dev Implements afterSwap for event tracking, uses unlock → swap → settle/take pattern
 interface IRestlessSettlementHook {
+    error InvalidAmount();
+    error PoolNotConfigured();
+    error OnlySettlement();
+    error OnlyOwner();
+    error OnlyPoolManager();
+    error InvalidInputToken();
+    error InvalidSettlementAddress();
+    error InvalidOwnerAddress();
+
     event YieldSwapped(
         address indexed recipient,
         address indexed outputToken,

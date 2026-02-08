@@ -23,6 +23,7 @@ contract SettlementFuzzTest is Test {
             address(0),
             address(0)
         );
+        settlement.setEscrow(address(this));
     }
 
     /// @notice Fuzz: yield split always distributes exact total, no tokens stuck
@@ -178,7 +179,7 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        vm.expectRevert("Invalid yield split");
+        vm.expectRevert(ISettlement.InvalidYieldSplit.selector);
         settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
@@ -200,7 +201,7 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        vm.expectRevert("Total less than principal");
+        vm.expectRevert(ISettlement.TotalLessThanPrincipal.selector);
         settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,

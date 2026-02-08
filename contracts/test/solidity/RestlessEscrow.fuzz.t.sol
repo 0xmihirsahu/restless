@@ -7,6 +7,7 @@ import "../../contracts/mocks/MockERC20.sol";
 import "../../contracts/mocks/MockYieldAdapter.sol";
 import "../../contracts/mocks/MockSettlement.sol";
 import {DealStatus, CreateDealParams, Deal} from "../../contracts/Types.sol";
+import "../../contracts/interfaces/IRestlessEscrow.sol";
 
 contract RestlessEscrowFuzzTest is Test {
     RestlessEscrow public escrow;
@@ -122,7 +123,7 @@ contract RestlessEscrowFuzzTest is Test {
         vm.assume(timeout < 1 days || timeout > 30 days);
 
         vm.prank(depositor);
-        vm.expectRevert("Invalid timeout");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.InvalidTimeout.selector));
         escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: 1000e6,

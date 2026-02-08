@@ -30,15 +30,14 @@ contract RestlessSettlementHook is BaseHook, IUnlockCallback, IRestlessSettlemen
     address public immutable owner;
 
     mapping(address => PoolKey) public poolKeys;
-    mapping(address => bool) public poolConfigured;
 
     modifier onlySettlement() {
-        require(msg.sender == settlementAddress, "Only settlement");
+        if (msg.sender != settlementAddress) revert OnlySettlement();
         _;
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner");
+        if (msg.sender != owner) revert OnlyOwner();
         _;
     }
 
@@ -48,9 +47,9 @@ contract RestlessSettlementHook is BaseHook, IUnlockCallback, IRestlessSettlemen
         address _settlementAddress,
         address _owner
     ) BaseHook(_poolManager) {
-        require(_inputToken != address(0), "Invalid input token");
-        require(_settlementAddress != address(0), "Invalid settlement");
-        require(_owner != address(0), "Invalid owner");
+        if (_inputToken == address(0)) revert InvalidInputToken();
+        if (_settlementAddress == address(0)) revert InvalidSettlementAddress();
+        if (_owner == address(0)) revert InvalidOwnerAddress();
 
         inputToken = _inputToken;
         settlementAddress = _settlementAddress;
@@ -97,7 +96,6 @@ contract RestlessSettlementHook is BaseHook, IUnlockCallback, IRestlessSettlemen
         PoolKey calldata key
     ) external onlyOwner {
         poolKeys[preferredToken] = key;
-        poolConfigured[preferredToken] = true;
         emit PoolKeySet(preferredToken);
     }
 
@@ -107,8 +105,8 @@ contract RestlessSettlementHook is BaseHook, IUnlockCallback, IRestlessSettlemen
         uint256 yieldAmount,
         address preferredToken
     ) external onlySettlement returns (uint256 amountOut) {
-        require(yieldAmount > 0, "Amount must be > 0");
-        require(poolConfigured[preferredToken], "Pool not configured");
+        if (yieldAmount == 0) revert InvalidAmount();
+        if (Currency.unwrap(poolKeys[preferredToken].currency0) == address(0)) revert PoolNotConfigured();
 
         IERC20(inputToken).safeTransferFrom(msg.sender, address(this), yieldAmount);
 
@@ -133,7 +131,7 @@ contract RestlessSettlementHook is BaseHook, IUnlockCallback, IRestlessSettlemen
     function unlockCallback(
         bytes calldata data
     ) external override returns (bytes memory) {
-        require(msg.sender == address(poolManager), "Only pool manager");
+        if (msg.sender != address(poolManager)) revert OnlyPoolManager();
 
         SwapCallbackData memory cbData = abi.decode(data, (SwapCallbackData));
         BalanceDelta delta = _executeSwap(cbData);

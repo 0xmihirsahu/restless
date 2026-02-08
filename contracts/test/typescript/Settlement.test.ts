@@ -25,6 +25,9 @@ describe("Settlement", function () {
       "0x0000000000000000000000000000000000000000",
     ]);
 
+    // Set deployer as escrow so it can call settle() directly
+    await settlement.write.setEscrow([deployer.account.address]);
+
     const principal = parseUnits("5000", 6);
     const yieldAmount = parseUnits("100", 6);
     const totalAmount = principal + yieldAmount;
@@ -177,7 +180,7 @@ describe("Settlement", function () {
       await token.write.mint([deployer.account.address, badTotal]);
       await token.write.approve([settlement.address, badTotal]);
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         settlement.write.settle([
           {
             dealId: 1n,
@@ -189,7 +192,8 @@ describe("Settlement", function () {
           },
           "0x",
         ]),
-        "Total less than principal"
+        settlement,
+        "TotalLessThanPrincipal"
       );
     });
 
@@ -200,7 +204,7 @@ describe("Settlement", function () {
       await token.write.mint([deployer.account.address, totalAmount]);
       await token.write.approve([settlement.address, totalAmount]);
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         settlement.write.settle([
           {
             dealId: 1n,
@@ -212,7 +216,8 @@ describe("Settlement", function () {
           },
           "0x",
         ]),
-        "Invalid yield split"
+        settlement,
+        "InvalidYieldSplit"
       );
     });
 
@@ -223,7 +228,7 @@ describe("Settlement", function () {
       await token.write.mint([deployer.account.address, totalAmount]);
       await token.write.approve([settlement.address, totalAmount]);
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         settlement.write.settle([
           {
             dealId: 1n,
@@ -235,7 +240,8 @@ describe("Settlement", function () {
           },
           "0x",
         ]),
-        "Principal must be > 0"
+        settlement,
+        "InvalidPrincipal"
       );
     });
   });
@@ -289,6 +295,9 @@ describe("Settlement", function () {
         lifiDiamond.address,
         "0x0000000000000000000000000000000000000000", // no hook
       ]);
+
+      // Set deployer as escrow
+      await settlement.write.setEscrow([deployer.account.address]);
 
       const principal = parseUnits("5000", 6);
       const yieldAmount = parseUnits("100", 6);
@@ -426,7 +435,7 @@ describe("Settlement", function () {
       // Bad calldata that will revert
       const badLifiData = "0xdeadbeef";
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         settlement.write.settle([
           {
             dealId: 1n,
@@ -438,7 +447,8 @@ describe("Settlement", function () {
           },
           badLifiData,
         ]),
-        "LI.FI bridge failed"
+        settlement,
+        "LiFiBridgeFailed"
       );
     });
   });
@@ -464,6 +474,9 @@ describe("Settlement", function () {
         badDiamond.address,
         "0x0000000000000000000000000000000000000000",
       ]);
+
+      // Set deployer as escrow
+      await settlement.write.setEscrow([deployer.account.address]);
 
       const principal = parseUnits("5000", 6);
       const yieldAmount = parseUnits("100", 6);
@@ -514,7 +527,7 @@ describe("Settlement", function () {
         ],
       });
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         settlement.write.settle([
           {
             dealId: 1n,
@@ -526,7 +539,8 @@ describe("Settlement", function () {
           },
           lifiData,
         ]),
-        "LI.FI amount mismatch"
+        settlement,
+        "LiFiAmountMismatch"
       );
     });
 
@@ -548,6 +562,9 @@ describe("Settlement", function () {
         lifiDiamond.address,
         "0x0000000000000000000000000000000000000000",
       ]);
+
+      // Set deployer as escrow
+      await settlement.write.setEscrow([deployer.account.address]);
 
       const principal = parseUnits("5000", 6);
       const totalAmount = parseUnits("5100", 6);
@@ -629,6 +646,9 @@ describe("Settlement", function () {
         "0x0000000000000000000000000000000000000000", // no lifi
         "0x0000000000000000000000000000000000000000", // no hook (set later)
       ]);
+
+      // Set deployer as escrow
+      await settlement.write.setEscrow([deployer.account.address]);
 
       // Deploy hook with settlement as authorized caller
       const hook = await viem.deployContract("MockRestlessSettlementHook", [
@@ -742,13 +762,16 @@ describe("Settlement", function () {
         "0x0000000000000000000000000000000000000000",
       ]);
 
+      // Set deployer as escrow
+      await settlement.write.setEscrow([deployer.account.address]);
+
       const principal = parseUnits("5000", 6);
       const total = parseUnits("5100", 6);
 
       await usdc.write.mint([deployer.account.address, total]);
       await usdc.write.approve([settlement.address, total]);
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         settlement.write.settleWithHook([
           {
             dealId: 1n,
@@ -760,7 +783,8 @@ describe("Settlement", function () {
           },
           weth.address,
         ]),
-        "Hook not configured"
+        settlement,
+        "HookNotConfigured"
       );
     });
 
@@ -781,9 +805,10 @@ describe("Settlement", function () {
         { client: { wallet: nonOwner } }
       );
 
-      await viem.assertions.revertWith(
+      await viem.assertions.revertWithCustomError(
         settlementAsNonOwner.write.setHook(["0x0000000000000000000000000000000000000001"]),
-        "Only owner"
+        settlement,
+        "OnlyOwner"
       );
     });
   });

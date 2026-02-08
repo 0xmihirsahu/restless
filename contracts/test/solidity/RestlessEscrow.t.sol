@@ -7,6 +7,8 @@ import "../../contracts/mocks/MockERC20.sol";
 import "../../contracts/mocks/MockYieldAdapter.sol";
 import "../../contracts/mocks/MockSettlement.sol";
 import {DealStatus, CreateDealParams, Deal} from "../../contracts/Types.sol";
+import "../../contracts/interfaces/IRestlessEscrow.sol";
+import {OnlyOwner} from "../../contracts/RestlessEscrow.sol";
 
 contract RestlessEscrowTest is Test {
     RestlessEscrow public escrow;
@@ -80,7 +82,7 @@ contract RestlessEscrowTest is Test {
 
     function test_createDeal_revert_self_escrow() public {
         vm.prank(depositor);
-        vm.expectRevert("Cannot escrow with self");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.CannotEscrowWithSelf.selector));
         escrow.createDeal(CreateDealParams({
             counterparty: depositor,
             amount: AMOUNT,
@@ -92,7 +94,7 @@ contract RestlessEscrowTest is Test {
 
     function test_createDeal_revert_zero_address() public {
         vm.prank(depositor);
-        vm.expectRevert("Invalid counterparty");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.InvalidCounterparty.selector));
         escrow.createDeal(CreateDealParams({
             counterparty: address(0),
             amount: AMOUNT,
@@ -104,7 +106,7 @@ contract RestlessEscrowTest is Test {
 
     function test_createDeal_revert_zero_amount() public {
         vm.prank(depositor);
-        vm.expectRevert("Amount must be > 0");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.InvalidAmount.selector));
         escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: 0,
@@ -116,7 +118,7 @@ contract RestlessEscrowTest is Test {
 
     function test_createDeal_revert_invalid_yield_split() public {
         vm.prank(depositor);
-        vm.expectRevert("Invalid yield split");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.InvalidYieldSplit.selector));
         escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: AMOUNT,
@@ -128,7 +130,7 @@ contract RestlessEscrowTest is Test {
 
     function test_createDeal_revert_timeout_too_short() public {
         vm.prank(depositor);
-        vm.expectRevert("Invalid timeout");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.InvalidTimeout.selector));
         escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: AMOUNT,
@@ -140,7 +142,7 @@ contract RestlessEscrowTest is Test {
 
     function test_createDeal_revert_timeout_too_long() public {
         vm.prank(depositor);
-        vm.expectRevert("Invalid timeout");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.InvalidTimeout.selector));
         escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: AMOUNT,
@@ -168,13 +170,13 @@ contract RestlessEscrowTest is Test {
         uint256 dealId = _createDeal();
 
         vm.prank(stranger);
-        vm.expectRevert("Only depositor can fund");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.Unauthorized.selector));
         escrow.fundDeal(dealId);
     }
 
     function test_fundDeal_revert_nonexistent() public {
         vm.prank(depositor);
-        vm.expectRevert("Deal does not exist");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.DealNotFound.selector));
         escrow.fundDeal(999);
     }
 
@@ -184,7 +186,7 @@ contract RestlessEscrowTest is Test {
         usdc.mint(depositor, AMOUNT);
         vm.startPrank(depositor);
         usdc.approve(address(escrow), AMOUNT);
-        vm.expectRevert("Deal not in Created state");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.InvalidDealStatus.selector));
         escrow.fundDeal(dealId);
         vm.stopPrank();
     }
@@ -213,7 +215,7 @@ contract RestlessEscrowTest is Test {
         uint256 dealId = _createDeal();
 
         vm.prank(stranger);
-        vm.expectRevert("Only deal parties can cancel");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.Unauthorized.selector));
         escrow.cancelDeal(dealId);
     }
 
@@ -221,7 +223,7 @@ contract RestlessEscrowTest is Test {
         uint256 dealId = _createAndFundDeal();
 
         vm.prank(depositor);
-        vm.expectRevert("Deal not in Created state");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.InvalidDealStatus.selector));
         escrow.cancelDeal(dealId);
     }
 
@@ -250,7 +252,7 @@ contract RestlessEscrowTest is Test {
         uint256 dealId = _createAndFundDeal();
 
         vm.prank(stranger);
-        vm.expectRevert("Only deal parties can dispute");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.Unauthorized.selector));
         escrow.disputeDeal(dealId);
     }
 
@@ -269,7 +271,7 @@ contract RestlessEscrowTest is Test {
         uint256 dealId = _createAndFundDeal();
 
         vm.prank(stranger);
-        vm.expectRevert("Only deal parties can settle");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.Unauthorized.selector));
         escrow.settleDeal(dealId, "");
     }
 
@@ -277,7 +279,7 @@ contract RestlessEscrowTest is Test {
         uint256 dealId = _createDeal();
 
         vm.prank(depositor);
-        vm.expectRevert("Deal not in Funded state");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.InvalidDealStatus.selector));
         escrow.settleDeal(dealId, "");
     }
 
@@ -305,7 +307,7 @@ contract RestlessEscrowTest is Test {
         escrow.disputeDeal(dealId);
 
         vm.prank(depositor);
-        vm.expectRevert("Timeout not elapsed");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.TimeoutNotElapsed.selector));
         escrow.claimTimeout(dealId);
     }
 
@@ -313,7 +315,7 @@ contract RestlessEscrowTest is Test {
         uint256 dealId = _createAndFundDeal();
 
         vm.prank(depositor);
-        vm.expectRevert("Deal not in Disputed state");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.InvalidDealStatus.selector));
         escrow.claimTimeout(dealId);
     }
 
@@ -326,7 +328,7 @@ contract RestlessEscrowTest is Test {
         vm.warp(block.timestamp + TIMEOUT + 1);
 
         vm.prank(stranger);
-        vm.expectRevert("Only depositor can claim timeout");
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.Unauthorized.selector));
         escrow.claimTimeout(dealId);
     }
 
@@ -361,7 +363,7 @@ contract RestlessEscrowTest is Test {
 
     function test_pause_revert_non_owner() public {
         vm.prank(stranger);
-        vm.expectRevert("Only owner");
+        vm.expectRevert(abi.encodeWithSelector(OnlyOwner.selector));
         escrow.pause();
     }
 

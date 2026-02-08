@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IRestlessSettlementHook.sol";
 
+error NoSwapRate();
+
 contract MockRestlessSettlementHook is IRestlessSettlementHook {
     using SafeERC20 for IERC20;
 
@@ -15,18 +17,18 @@ contract MockRestlessSettlementHook is IRestlessSettlementHook {
     mapping(address => uint256) public swapRates;
 
     modifier onlySettlement() {
-        require(msg.sender == settlementAddress, "Only settlement");
+        if (msg.sender != settlementAddress) revert OnlySettlement();
         _;
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner");
+        if (msg.sender != owner) revert OnlyOwner();
         _;
     }
 
     constructor(address _inputToken, address _settlementAddress) {
-        require(_inputToken != address(0), "Invalid input token");
-        require(_settlementAddress != address(0), "Invalid settlement");
+        if (_inputToken == address(0)) revert InvalidInputToken();
+        if (_settlementAddress == address(0)) revert InvalidSettlementAddress();
 
         inputToken = IERC20(_inputToken);
         settlementAddress = _settlementAddress;
@@ -43,8 +45,8 @@ contract MockRestlessSettlementHook is IRestlessSettlementHook {
         uint256 yieldAmount,
         address preferredToken
     ) external onlySettlement returns (uint256 amountOut) {
-        require(yieldAmount > 0, "Amount must be > 0");
-        require(swapRates[preferredToken] > 0, "No swap rate configured");
+        if (yieldAmount == 0) revert InvalidAmount();
+        if (swapRates[preferredToken] == 0) revert NoSwapRate();
 
         inputToken.safeTransferFrom(msg.sender, address(this), yieldAmount);
 

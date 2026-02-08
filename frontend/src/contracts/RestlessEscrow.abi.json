@@ -348,7 +348,7 @@
             "type": "bytes32"
           }
         ],
-        "internalType": "struct RestlessEscrow.CreateDealParams",
+        "internalType": "struct CreateDealParams",
         "name": "params",
         "type": "tuple"
       }
@@ -413,7 +413,7 @@
         "type": "uint8"
       },
       {
-        "internalType": "enum RestlessEscrow.DealStatus",
+        "internalType": "enum DealStatus",
         "name": "status",
         "type": "uint8"
       },
@@ -572,7 +572,7 @@
             "type": "uint8"
           },
           {
-            "internalType": "enum RestlessEscrow.DealStatus",
+            "internalType": "enum DealStatus",
             "name": "status",
             "type": "uint8"
           },
@@ -602,7 +602,7 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct RestlessEscrow.Deal",
+        "internalType": "struct Deal",
         "name": "",
         "type": "tuple"
       }

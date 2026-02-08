@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IRestlessSettlementHook.sol";
 
-/// @title MockRestlessSettlementHook
-/// @notice Mock hook for testing — uses fixed swap rates instead of v4 pools
 contract MockRestlessSettlementHook is IRestlessSettlementHook {
     using SafeERC20 for IERC20;
 
@@ -15,13 +13,6 @@ contract MockRestlessSettlementHook is IRestlessSettlementHook {
     address public immutable settlementAddress;
 
     mapping(address => uint256) public swapRates;
-
-    event YieldSwapped(
-        address indexed recipient,
-        address indexed outputToken,
-        uint256 inputAmount,
-        uint256 outputAmount
-    );
 
     modifier onlySettlement() {
         require(msg.sender == settlementAddress, "Only settlement");

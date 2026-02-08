@@ -1,24 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {SettleParams} from "../Types.sol";
+
 /// @title ISettlement
-/// @notice Interface for settlement logic — yield splitting and payout routing
+/// @notice Handles yield splitting, payout routing, cross-chain bridging (LI.FI), and yield swaps (v4 hook)
+/// @dev Called by RestlessEscrow after withdrawing funds from yield adapter
 interface ISettlement {
-    /// @notice Parameters for settling a deal
-    /// @param dealId The deal identifier
-    /// @param depositor The depositor address
-    /// @param counterparty The counterparty address
-    /// @param principal The original deposited amount
-    /// @param total The total withdrawn amount (principal + yield)
-    /// @param yieldSplitCounterparty Percentage of yield going to counterparty (0-100)
-    struct SettleParams {
-        uint256 dealId;
-        address depositor;
-        address counterparty;
-        uint256 principal;
-        uint256 total;
-        uint8 yieldSplitCounterparty;
-    }
+    event DealSettled(
+        uint256 indexed dealId,
+        address indexed depositor,
+        address indexed counterparty,
+        uint256 counterpartyPayout,
+        uint256 depositorPayout
+    );
+
+    event HookUpdated(address indexed hook);
 
     /// @notice Settle a deal: split yield and pay out parties
     /// @param params The settlement parameters

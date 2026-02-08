@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "../interfaces/ISettlement.sol";
+import {SettleParams} from "../Types.sol";
 
 /// @notice Mock settlement for testing — just records calls
 contract MockSettlement is ISettlement {

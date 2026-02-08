@@ -6,6 +6,7 @@ import "../../contracts/RestlessEscrow.sol";
 import "../../contracts/mocks/MockERC20.sol";
 import "../../contracts/mocks/MockYieldAdapter.sol";
 import "../../contracts/mocks/MockSettlement.sol";
+import {DealStatus, CreateDealParams, Deal} from "../../contracts/Types.sol";
 
 contract RestlessEscrowTest is Test {
     RestlessEscrow public escrow;
@@ -42,11 +43,9 @@ contract RestlessEscrowTest is Test {
         usdc.mint(address(adapter), MOCK_YIELD);
     }
 
-    // ─── createDeal ─────────────────────────────────────────────────
-
     function test_createDeal() public {
         vm.prank(depositor);
-        uint256 id = escrow.createDeal(RestlessEscrow.CreateDealParams({
+        uint256 id = escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: AMOUNT,
             yieldSplitCounterparty: 50,
@@ -60,14 +59,14 @@ contract RestlessEscrowTest is Test {
 
     function test_createDeal_increments() public {
         vm.startPrank(depositor);
-        escrow.createDeal(RestlessEscrow.CreateDealParams({
+        escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: AMOUNT,
             yieldSplitCounterparty: 50,
             timeout: TIMEOUT,
             dealHash: DEAL_HASH
         }));
-        uint256 id2 = escrow.createDeal(RestlessEscrow.CreateDealParams({
+        uint256 id2 = escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: AMOUNT,
             yieldSplitCounterparty: 50,
@@ -82,7 +81,7 @@ contract RestlessEscrowTest is Test {
     function test_createDeal_revert_self_escrow() public {
         vm.prank(depositor);
         vm.expectRevert("Cannot escrow with self");
-        escrow.createDeal(RestlessEscrow.CreateDealParams({
+        escrow.createDeal(CreateDealParams({
             counterparty: depositor,
             amount: AMOUNT,
             yieldSplitCounterparty: 50,
@@ -94,7 +93,7 @@ contract RestlessEscrowTest is Test {
     function test_createDeal_revert_zero_address() public {
         vm.prank(depositor);
         vm.expectRevert("Invalid counterparty");
-        escrow.createDeal(RestlessEscrow.CreateDealParams({
+        escrow.createDeal(CreateDealParams({
             counterparty: address(0),
             amount: AMOUNT,
             yieldSplitCounterparty: 50,
@@ -106,7 +105,7 @@ contract RestlessEscrowTest is Test {
     function test_createDeal_revert_zero_amount() public {
         vm.prank(depositor);
         vm.expectRevert("Amount must be > 0");
-        escrow.createDeal(RestlessEscrow.CreateDealParams({
+        escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: 0,
             yieldSplitCounterparty: 50,
@@ -118,7 +117,7 @@ contract RestlessEscrowTest is Test {
     function test_createDeal_revert_invalid_yield_split() public {
         vm.prank(depositor);
         vm.expectRevert("Invalid yield split");
-        escrow.createDeal(RestlessEscrow.CreateDealParams({
+        escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: AMOUNT,
             yieldSplitCounterparty: 101,
@@ -130,7 +129,7 @@ contract RestlessEscrowTest is Test {
     function test_createDeal_revert_timeout_too_short() public {
         vm.prank(depositor);
         vm.expectRevert("Invalid timeout");
-        escrow.createDeal(RestlessEscrow.CreateDealParams({
+        escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: AMOUNT,
             yieldSplitCounterparty: 50,
@@ -142,7 +141,7 @@ contract RestlessEscrowTest is Test {
     function test_createDeal_revert_timeout_too_long() public {
         vm.prank(depositor);
         vm.expectRevert("Invalid timeout");
-        escrow.createDeal(RestlessEscrow.CreateDealParams({
+        escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: AMOUNT,
             yieldSplitCounterparty: 50,
@@ -150,8 +149,6 @@ contract RestlessEscrowTest is Test {
             dealHash: DEAL_HASH
         }));
     }
-
-    // ─── fundDeal ───────────────────────────────────────────────────
 
     function test_fundDeal() public {
         uint256 dealId = _createDeal();
@@ -162,8 +159,8 @@ contract RestlessEscrowTest is Test {
         escrow.fundDeal(dealId);
         vm.stopPrank();
 
-        RestlessEscrow.Deal memory deal = escrow.getDeal(dealId);
-        assertEq(uint8(deal.status), uint8(RestlessEscrow.DealStatus.Funded), "deal should be Funded");
+        Deal memory deal = escrow.getDeal(dealId);
+        assertEq(uint8(deal.status), uint8(DealStatus.Funded), "deal should be Funded");
         assertTrue(deal.fundedAt > 0, "fundedAt should be set");
     }
 
@@ -192,16 +189,14 @@ contract RestlessEscrowTest is Test {
         vm.stopPrank();
     }
 
-    // ─── cancelDeal ─────────────────────────────────────────────────
-
     function test_cancelDeal_by_depositor() public {
         uint256 dealId = _createDeal();
 
         vm.prank(depositor);
         escrow.cancelDeal(dealId);
 
-        RestlessEscrow.Deal memory deal = escrow.getDeal(dealId);
-        assertEq(uint8(deal.status), uint8(RestlessEscrow.DealStatus.Cancelled));
+        Deal memory deal = escrow.getDeal(dealId);
+        assertEq(uint8(deal.status), uint8(DealStatus.Cancelled));
     }
 
     function test_cancelDeal_by_counterparty() public {
@@ -210,8 +205,8 @@ contract RestlessEscrowTest is Test {
         vm.prank(counterparty);
         escrow.cancelDeal(dealId);
 
-        RestlessEscrow.Deal memory deal = escrow.getDeal(dealId);
-        assertEq(uint8(deal.status), uint8(RestlessEscrow.DealStatus.Cancelled));
+        Deal memory deal = escrow.getDeal(dealId);
+        assertEq(uint8(deal.status), uint8(DealStatus.Cancelled));
     }
 
     function test_cancelDeal_revert_stranger() public {
@@ -230,16 +225,14 @@ contract RestlessEscrowTest is Test {
         escrow.cancelDeal(dealId);
     }
 
-    // ─── disputeDeal ────────────────────────────────────────────────
-
     function test_disputeDeal() public {
         uint256 dealId = _createAndFundDeal();
 
         vm.prank(depositor);
         escrow.disputeDeal(dealId);
 
-        RestlessEscrow.Deal memory deal = escrow.getDeal(dealId);
-        assertEq(uint8(deal.status), uint8(RestlessEscrow.DealStatus.Disputed));
+        Deal memory deal = escrow.getDeal(dealId);
+        assertEq(uint8(deal.status), uint8(DealStatus.Disputed));
         assertTrue(deal.disputedAt > 0);
     }
 
@@ -249,8 +242,8 @@ contract RestlessEscrowTest is Test {
         vm.prank(counterparty);
         escrow.disputeDeal(dealId);
 
-        RestlessEscrow.Deal memory deal = escrow.getDeal(dealId);
-        assertEq(uint8(deal.status), uint8(RestlessEscrow.DealStatus.Disputed));
+        Deal memory deal = escrow.getDeal(dealId);
+        assertEq(uint8(deal.status), uint8(DealStatus.Disputed));
     }
 
     function test_disputeDeal_revert_stranger() public {
@@ -261,16 +254,14 @@ contract RestlessEscrowTest is Test {
         escrow.disputeDeal(dealId);
     }
 
-    // ─── settleDeal ─────────────────────────────────────────────────
-
     function test_settleDeal() public {
         uint256 dealId = _createAndFundDeal();
 
         vm.prank(depositor);
         escrow.settleDeal(dealId, "");
 
-        RestlessEscrow.Deal memory deal = escrow.getDeal(dealId);
-        assertEq(uint8(deal.status), uint8(RestlessEscrow.DealStatus.Settled));
+        Deal memory deal = escrow.getDeal(dealId);
+        assertEq(uint8(deal.status), uint8(DealStatus.Settled));
         assertEq(settlement.getSettleCallCount(), 1, "settlement should be called once");
     }
 
@@ -290,8 +281,6 @@ contract RestlessEscrowTest is Test {
         escrow.settleDeal(dealId, "");
     }
 
-    // ─── claimTimeout ───────────────────────────────────────────────
-
     function test_claimTimeout() public {
         uint256 dealId = _createAndFundDeal();
 
@@ -304,8 +293,8 @@ contract RestlessEscrowTest is Test {
         vm.prank(depositor);
         escrow.claimTimeout(dealId);
 
-        RestlessEscrow.Deal memory deal = escrow.getDeal(dealId);
-        assertEq(uint8(deal.status), uint8(RestlessEscrow.DealStatus.TimedOut));
+        Deal memory deal = escrow.getDeal(dealId);
+        assertEq(uint8(deal.status), uint8(DealStatus.TimedOut));
         assertEq(usdc.balanceOf(depositor), AMOUNT + MOCK_YIELD, "depositor should get principal + yield");
     }
 
@@ -341,14 +330,12 @@ contract RestlessEscrowTest is Test {
         escrow.claimTimeout(dealId);
     }
 
-    // ─── pause / unpause ────────────────────────────────────────────
-
     function test_pause_blocks_createDeal() public {
         escrow.pause();
 
         vm.prank(depositor);
         vm.expectRevert(abi.encodeWithSignature("EnforcedPause()"));
-        escrow.createDeal(RestlessEscrow.CreateDealParams({
+        escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: AMOUNT,
             yieldSplitCounterparty: 50,
@@ -362,7 +349,7 @@ contract RestlessEscrowTest is Test {
         escrow.unpause();
 
         vm.prank(depositor);
-        uint256 id = escrow.createDeal(RestlessEscrow.CreateDealParams({
+        uint256 id = escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: AMOUNT,
             yieldSplitCounterparty: 50,
@@ -378,11 +365,9 @@ contract RestlessEscrowTest is Test {
         escrow.pause();
     }
 
-    // ─── Helpers ────────────────────────────────────────────────────
-
     function _createDeal() internal returns (uint256) {
         vm.prank(depositor);
-        return escrow.createDeal(RestlessEscrow.CreateDealParams({
+        return escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: AMOUNT,
             yieldSplitCounterparty: 50,

@@ -4,6 +4,9 @@ pragma solidity ^0.8.24;
 /// @title IYieldAdapter
 /// @notice Interface for yield-generating adapters (Aave, Morpho, etc.)
 interface IYieldAdapter {
+    event Deposited(uint256 indexed dealId, uint256 amount, uint256 aTokenReceived);
+    event Withdrawn(uint256 indexed dealId, uint256 principal, uint256 total);
+
     /// @notice Deposit tokens into yield source for a specific deal
     function deposit(uint256 dealId, uint256 amount) external;
 

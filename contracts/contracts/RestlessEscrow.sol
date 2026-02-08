@@ -7,44 +7,13 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "./interfaces/IRestlessEscrow.sol";
 import "./interfaces/IYieldAdapter.sol";
 import "./interfaces/ISettlement.sol";
+import {DealStatus, CreateDealParams, Deal, SettleParams} from "./Types.sol";
 
-/// @title RestlessEscrow
-/// @notice P2P escrow where locked funds earn yield while waiting for deal completion
-contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
+contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     using SafeERC20 for IERC20;
-
-    enum DealStatus {
-        Created,
-        Funded,
-        Settled,
-        Disputed,
-        TimedOut,
-        Cancelled
-    }
-
-    struct CreateDealParams {
-        address counterparty;
-        uint256 amount;
-        uint8 yieldSplitCounterparty;
-        uint256 timeout;
-        bytes32 dealHash;
-    }
-
-    struct Deal {
-        uint256 id;
-        address depositor;
-        address counterparty;
-        uint256 amount;
-        uint8 yieldSplitCounterparty;
-        DealStatus status;
-        uint256 timeout;
-        bytes32 dealHash;
-        uint256 createdAt;
-        uint256 fundedAt;
-        uint256 disputedAt;
-    }
 
     IERC20 public immutable token;
     IYieldAdapter public immutable yieldAdapter;
@@ -56,21 +25,13 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
 
     uint256 public constant MIN_TIMEOUT = 1 days;
     uint256 public constant MAX_TIMEOUT = 30 days;
+    bytes32 public constant SETTLE_TYPEHASH =
+        keccak256("SettleRequest(uint256 dealId,bytes32 dealHash)");
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner");
         _;
     }
-
-    event DealCreated(uint256 indexed dealId, address indexed depositor, address indexed counterparty, uint256 amount, bytes32 dealHash);
-    event DealFunded(uint256 indexed dealId, uint256 amount);
-    event DealSettled(uint256 indexed dealId, uint256 totalPayout);
-    event DealDisputed(uint256 indexed dealId, address disputedBy);
-    event DealTimedOut(uint256 indexed dealId, uint256 refundAmount);
-    event DealCancelled(uint256 indexed dealId, address cancelledBy);
-
-    bytes32 public constant SETTLE_TYPEHASH =
-        keccak256("SettleRequest(uint256 dealId,bytes32 dealHash)");
 
     constructor(address _token, address _yieldAdapter, address _settlement)
         EIP712("RestlessEscrow", "1")
@@ -93,6 +54,7 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         _unpause();
     }
 
+    /// @inheritdoc IRestlessEscrow
     function createDeal(
         CreateDealParams calldata params
     ) external whenNotPaused returns (uint256) {
@@ -121,6 +83,7 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         return dealCount;
     }
 
+    /// @inheritdoc IRestlessEscrow
     function fundDeal(uint256 dealId) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
         require(deal.id != 0, "Deal does not exist");
@@ -137,6 +100,7 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         emit DealFunded(dealId, deal.amount);
     }
 
+    /// @inheritdoc IRestlessEscrow
     function disputeDeal(uint256 dealId) external whenNotPaused {
         Deal storage deal = deals[dealId];
         require(deal.id != 0, "Deal does not exist");
@@ -152,6 +116,7 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         emit DealDisputed(dealId, msg.sender);
     }
 
+    /// @inheritdoc IRestlessEscrow
     function cancelDeal(uint256 dealId) external whenNotPaused {
         Deal storage deal = deals[dealId];
         require(deal.id != 0, "Deal does not exist");
@@ -166,6 +131,7 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         emit DealCancelled(dealId, msg.sender);
     }
 
+    /// @inheritdoc IRestlessEscrow
     function settleDeal(uint256 dealId, bytes calldata lifiData) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
         require(deal.id != 0, "Deal does not exist");
@@ -178,6 +144,7 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         _executeSettlement(deal, dealId, lifiData);
     }
 
+    /// @inheritdoc IRestlessEscrow
     function settleDealSigned(
         uint256 dealId,
         bytes calldata lifiData,
@@ -188,13 +155,11 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         require(deal.id != 0, "Deal does not exist");
         require(deal.status == DealStatus.Funded, "Deal not in Funded state");
 
-        // Build EIP-712 struct hash
         bytes32 structHash = keccak256(
             abi.encode(SETTLE_TYPEHASH, dealId, deal.dealHash)
         );
         bytes32 digest = _hashTypedDataV4(structHash);
 
-        // Verify both signatures
         address recoveredDepositor = ECDSA.recover(digest, depositorSig);
         require(recoveredDepositor == deal.depositor, "Invalid depositor signature");
 
@@ -204,29 +169,7 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         _executeSettlement(deal, dealId, lifiData);
     }
 
-    function _executeSettlement(Deal storage deal, uint256 dealId, bytes calldata lifiData) internal {
-        deal.status = DealStatus.Settled;
-
-        uint256 total = yieldAdapter.withdraw(dealId);
-        // Handle Aave aToken rounding loss (can return 1-2 wei less than deposited)
-        uint256 principal = total < deal.amount ? total : deal.amount;
-
-        token.approve(address(settlement), total);
-        settlement.settle(
-            ISettlement.SettleParams({
-                dealId: dealId,
-                depositor: deal.depositor,
-                counterparty: deal.counterparty,
-                principal: principal,
-                total: total,
-                yieldSplitCounterparty: deal.yieldSplitCounterparty
-            }),
-            lifiData
-        );
-
-        emit DealSettled(dealId, total);
-    }
-
+    /// @inheritdoc IRestlessEscrow
     function settleDealWithHook(uint256 dealId, address preferredToken) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
         require(deal.id != 0, "Deal does not exist");
@@ -239,6 +182,7 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         _executeHookSettlement(deal, dealId, preferredToken);
     }
 
+    /// @inheritdoc IRestlessEscrow
     function settleDealWithHookSigned(
         uint256 dealId,
         address preferredToken,
@@ -263,29 +207,7 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         _executeHookSettlement(deal, dealId, preferredToken);
     }
 
-    function _executeHookSettlement(Deal storage deal, uint256 dealId, address preferredToken) internal {
-        deal.status = DealStatus.Settled;
-
-        uint256 total = yieldAdapter.withdraw(dealId);
-        // Handle Aave aToken rounding loss (can return 1-2 wei less than deposited)
-        uint256 principal = total < deal.amount ? total : deal.amount;
-
-        token.approve(address(settlement), total);
-        settlement.settleWithHook(
-            ISettlement.SettleParams({
-                dealId: dealId,
-                depositor: deal.depositor,
-                counterparty: deal.counterparty,
-                principal: principal,
-                total: total,
-                yieldSplitCounterparty: deal.yieldSplitCounterparty
-            }),
-            preferredToken
-        );
-
-        emit DealSettled(dealId, total);
-    }
-
+    /// @inheritdoc IRestlessEscrow
     function claimTimeout(uint256 dealId) external nonReentrant {
         Deal storage deal = deals[dealId];
         require(deal.id != 0, "Deal does not exist");
@@ -301,11 +223,59 @@ contract RestlessEscrow is ReentrancyGuard, Pausable, EIP712 {
         emit DealTimedOut(dealId, total);
     }
 
+    /// @inheritdoc IRestlessEscrow
     function getDeal(uint256 dealId) external view returns (Deal memory) {
         return deals[dealId];
     }
 
+    /// @inheritdoc IRestlessEscrow
     function getAccruedYield(uint256 dealId) external view returns (uint256) {
         return yieldAdapter.getAccruedYield(dealId);
+    }
+
+    function _executeSettlement(Deal storage deal, uint256 dealId, bytes calldata lifiData) internal {
+        deal.status = DealStatus.Settled;
+
+        uint256 total = yieldAdapter.withdraw(dealId);
+        // Aave aToken rounding can return 1-2 wei less than deposited
+        uint256 principal = total < deal.amount ? total : deal.amount;
+
+        token.approve(address(settlement), total);
+        settlement.settle(
+            SettleParams({
+                dealId: dealId,
+                depositor: deal.depositor,
+                counterparty: deal.counterparty,
+                principal: principal,
+                total: total,
+                yieldSplitCounterparty: deal.yieldSplitCounterparty
+            }),
+            lifiData
+        );
+
+        emit DealSettled(dealId, total);
+    }
+
+    function _executeHookSettlement(Deal storage deal, uint256 dealId, address preferredToken) internal {
+        deal.status = DealStatus.Settled;
+
+        uint256 total = yieldAdapter.withdraw(dealId);
+        // Aave aToken rounding can return 1-2 wei less than deposited
+        uint256 principal = total < deal.amount ? total : deal.amount;
+
+        token.approve(address(settlement), total);
+        settlement.settleWithHook(
+            SettleParams({
+                dealId: dealId,
+                depositor: deal.depositor,
+                counterparty: deal.counterparty,
+                principal: principal,
+                total: total,
+                yieldSplitCounterparty: deal.yieldSplitCounterparty
+            }),
+            preferredToken
+        );
+
+        emit DealSettled(dealId, total);
     }
 }

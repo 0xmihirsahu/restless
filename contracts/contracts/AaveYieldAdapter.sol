@@ -11,10 +11,10 @@ interface IAavePool {
     function withdraw(address asset, uint256 amount, address to) external returns (uint256);
 }
 
-/// @title AaveYieldAdapter
-/// @notice Deposits escrow USDC into Aave V3 to earn yield, tracks per-deal balances
 contract AaveYieldAdapter is IYieldAdapter {
     using SafeERC20 for IERC20;
+
+    event EscrowSet(address escrow);
 
     struct DepositRecord {
         uint256 principal;
@@ -32,10 +32,6 @@ contract AaveYieldAdapter is IYieldAdapter {
 
     mapping(uint256 => DepositRecord) public deposits;
     uint256 public totalDeposited;
-
-    event Deposited(uint256 indexed dealId, uint256 amount, uint256 aTokenReceived);
-    event Withdrawn(uint256 indexed dealId, uint256 principal, uint256 total);
-    event EscrowSet(address escrow);
 
     modifier onlyEscrow() {
         require(msg.sender == escrow, "Only escrow");
@@ -58,7 +54,6 @@ contract AaveYieldAdapter is IYieldAdapter {
         owner = msg.sender;
     }
 
-    /// @notice Set the escrow address (one-time, called after escrow deployment)
     function setEscrow(address _escrow) external onlyOwner {
         require(!escrowSet, "Escrow already set");
         require(_escrow != address(0), "Invalid escrow");

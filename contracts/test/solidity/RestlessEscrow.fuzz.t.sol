@@ -6,6 +6,7 @@ import "../../contracts/RestlessEscrow.sol";
 import "../../contracts/mocks/MockERC20.sol";
 import "../../contracts/mocks/MockYieldAdapter.sol";
 import "../../contracts/mocks/MockSettlement.sol";
+import {DealStatus, CreateDealParams, Deal} from "../../contracts/Types.sol";
 
 contract RestlessEscrowFuzzTest is Test {
     RestlessEscrow public escrow;
@@ -42,7 +43,7 @@ contract RestlessEscrowFuzzTest is Test {
         timeout = bound(timeout, 1 days, 30 days);
 
         vm.prank(depositor);
-        uint256 id = escrow.createDeal(RestlessEscrow.CreateDealParams({
+        uint256 id = escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: amount,
             yieldSplitCounterparty: yieldSplit,
@@ -51,11 +52,11 @@ contract RestlessEscrowFuzzTest is Test {
         }));
 
         assertEq(id, 1);
-        RestlessEscrow.Deal memory deal = escrow.getDeal(id);
+        Deal memory deal = escrow.getDeal(id);
         assertEq(deal.amount, amount);
         assertEq(deal.yieldSplitCounterparty, yieldSplit);
         assertEq(deal.timeout, timeout);
-        assertEq(uint8(deal.status), uint8(RestlessEscrow.DealStatus.Created));
+        assertEq(uint8(deal.status), uint8(DealStatus.Created));
     }
 
     /// @notice Fuzz: any deposit amount should fund and reach yield adapter
@@ -63,7 +64,7 @@ contract RestlessEscrowFuzzTest is Test {
         amount = bound(amount, 1, 1_000_000_000e6); // up to 1B USDC
 
         vm.prank(depositor);
-        uint256 dealId = escrow.createDeal(RestlessEscrow.CreateDealParams({
+        uint256 dealId = escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: amount,
             yieldSplitCounterparty: 50,
@@ -79,8 +80,8 @@ contract RestlessEscrowFuzzTest is Test {
 
         // Adapter should hold the tokens
         assertEq(usdc.balanceOf(address(adapter)), amount);
-        RestlessEscrow.Deal memory deal = escrow.getDeal(dealId);
-        assertEq(uint8(deal.status), uint8(RestlessEscrow.DealStatus.Funded));
+        Deal memory deal = escrow.getDeal(dealId);
+        assertEq(uint8(deal.status), uint8(DealStatus.Funded));
     }
 
     /// @notice Fuzz: timeout claim always returns principal + yield to depositor
@@ -97,7 +98,7 @@ contract RestlessEscrowFuzzTest is Test {
         usdc.mint(address(adapter), mockYield);
 
         vm.prank(depositor);
-        uint256 dealId = escrow.createDeal(RestlessEscrow.CreateDealParams({
+        uint256 dealId = escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: amount,
             yieldSplitCounterparty: 50,
@@ -118,7 +119,7 @@ contract RestlessEscrowFuzzTest is Test {
         escrow.claimTimeout(dealId);
 
         assertEq(usdc.balanceOf(depositor), amount + mockYield, "depositor should get full refund + yield");
-        assertEq(uint8(escrow.getDeal(dealId).status), uint8(RestlessEscrow.DealStatus.TimedOut));
+        assertEq(uint8(escrow.getDeal(dealId).status), uint8(DealStatus.TimedOut));
     }
 
     /// @notice Fuzz: invalid timeout values always revert
@@ -127,7 +128,7 @@ contract RestlessEscrowFuzzTest is Test {
 
         vm.prank(depositor);
         vm.expectRevert("Invalid timeout");
-        escrow.createDeal(RestlessEscrow.CreateDealParams({
+        escrow.createDeal(CreateDealParams({
             counterparty: counterparty,
             amount: 1000e6,
             yieldSplitCounterparty: 50,

@@ -168,7 +168,7 @@
             "type": "uint8"
           }
         ],
-        "internalType": "struct ISettlement.SettleParams",
+        "internalType": "struct SettleParams",
         "name": "params",
         "type": "tuple"
       },
@@ -218,7 +218,7 @@
             "type": "uint8"
           }
         ],
-        "internalType": "struct ISettlement.SettleParams",
+        "internalType": "struct SettleParams",
         "name": "params",
         "type": "tuple"
       },

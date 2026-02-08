@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "../../contracts/Settlement.sol";
 import "../../contracts/interfaces/ISettlement.sol";
 import "../../contracts/mocks/MockERC20.sol";
+import {SettleParams} from "../../contracts/Types.sol";
 
 contract SettlementFuzzTest is Test {
     Settlement public settlement;
@@ -40,7 +41,7 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -73,7 +74,7 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -101,7 +102,7 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -128,7 +129,7 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -154,7 +155,7 @@ contract SettlementFuzzTest is Test {
         usdc.mint(address(this), total);
         usdc.approve(address(settlement), total);
 
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -178,7 +179,7 @@ contract SettlementFuzzTest is Test {
         usdc.approve(address(settlement), total);
 
         vm.expectRevert("Invalid yield split");
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -200,7 +201,7 @@ contract SettlementFuzzTest is Test {
         usdc.approve(address(settlement), total);
 
         vm.expectRevert("Total less than principal");
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,

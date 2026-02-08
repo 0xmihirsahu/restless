@@ -8,6 +8,7 @@ import "../../contracts/mocks/MockERC20.sol";
 import "../../contracts/mocks/MockLiFiDiamond.sol";
 import "../../contracts/mocks/MockLiFiDiamondNoOp.sol";
 import "../../contracts/RestlessSettlementHook.sol";
+import {SettleParams} from "../../contracts/Types.sol";
 
 contract SettlementTest is Test {
     Settlement public settlement;
@@ -33,12 +34,10 @@ contract SettlementTest is Test {
         );
     }
 
-    // ─── Yield Split Tests ──────────────────────────────────────────
-
     function test_settle_100pct_yield_to_counterparty() public {
         _mintAndApprove(TOTAL);
 
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -54,7 +53,7 @@ contract SettlementTest is Test {
     function test_settle_0pct_yield_to_counterparty() public {
         _mintAndApprove(TOTAL);
 
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -70,7 +69,7 @@ contract SettlementTest is Test {
     function test_settle_50pct_yield_split() public {
         _mintAndApprove(TOTAL);
 
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -87,7 +86,7 @@ contract SettlementTest is Test {
     function test_settle_no_yield() public {
         _mintAndApprove(PRINCIPAL);
 
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -100,14 +99,12 @@ contract SettlementTest is Test {
         assertEq(usdc.balanceOf(depositor), 0, "depositor should get nothing");
     }
 
-    // ─── Validation Tests ───────────────────────────────────────────
-
     function test_revert_total_less_than_principal() public {
         uint256 badTotal = PRINCIPAL - 100e6;
         _mintAndApprove(badTotal);
 
         vm.expectRevert("Total less than principal");
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -121,7 +118,7 @@ contract SettlementTest is Test {
         _mintAndApprove(TOTAL);
 
         vm.expectRevert("Invalid yield split");
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -135,7 +132,7 @@ contract SettlementTest is Test {
         _mintAndApprove(TOTAL);
 
         vm.expectRevert("Principal must be > 0");
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -144,8 +141,6 @@ contract SettlementTest is Test {
             yieldSplitCounterparty: 100
         }), "");
     }
-
-    // ─── LI.FI Validation Tests ─────────────────────────────────────
 
     function test_lifi_revert_when_tokens_not_consumed() public {
         MockLiFiDiamondNoOp badDiamond = new MockLiFiDiamondNoOp();
@@ -165,7 +160,7 @@ contract SettlementTest is Test {
         );
 
         vm.expectRevert("LI.FI amount mismatch");
-        lifiSettlement.settle(ISettlement.SettleParams({
+        lifiSettlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -191,7 +186,7 @@ contract SettlementTest is Test {
             address(usdc), TOTAL, counterparty, 421614
         );
 
-        lifiSettlement.settle(ISettlement.SettleParams({
+        lifiSettlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -220,7 +215,7 @@ contract SettlementTest is Test {
             address(usdc), TOTAL, counterparty, 421614
         );
 
-        lifiSettlement.settle(ISettlement.SettleParams({
+        lifiSettlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -233,15 +228,13 @@ contract SettlementTest is Test {
         assertEq(remaining, 0, "approval should be reset to 0 after bridge");
     }
 
-    // ─── Event Emission ─────────────────────────────────────────────
-
     function test_emit_DealSettled() public {
         _mintAndApprove(TOTAL);
 
         vm.expectEmit(true, true, true, true);
-        emit Settlement.DealSettled(1, depositor, counterparty, TOTAL, 0);
+        emit ISettlement.DealSettled(1, depositor, counterparty, TOTAL, 0);
 
-        settlement.settle(ISettlement.SettleParams({
+        settlement.settle(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -251,13 +244,11 @@ contract SettlementTest is Test {
         }), "");
     }
 
-    // ─── Hook Tests ─────────────────────────────────────────────────
-
     function test_settleWithHook_revert_no_hook() public {
         _mintAndApprove(TOTAL);
 
         vm.expectRevert("Hook not configured");
-        settlement.settleWithHook(ISettlement.SettleParams({
+        settlement.settleWithHook(SettleParams({
             dealId: 1,
             depositor: depositor,
             counterparty: counterparty,
@@ -266,8 +257,6 @@ contract SettlementTest is Test {
             yieldSplitCounterparty: 100
         }), makeAddr("weth"));
     }
-
-    // ─── Helpers ────────────────────────────────────────────────────
 
     function _mintAndApprove(uint256 amount) internal {
         usdc.mint(address(this), amount);

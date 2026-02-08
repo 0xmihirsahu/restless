@@ -13,6 +13,7 @@ import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
+import {IRestlessSettlementHook} from "../../contracts/interfaces/IRestlessSettlementHook.sol";
 import {RestlessSettlementHook} from "../../contracts/RestlessSettlementHook.sol";
 
 contract RestlessSettlementHookTest is Test, Deployers {
@@ -67,8 +68,6 @@ contract RestlessSettlementHookTest is Test, Deployers {
         MockERC20(inputToken).approve(address(hook), type(uint256).max);
     }
 
-    // ─── settleWithSwap ──────────────────────────────────────────
-
     function test_settleWithSwap_swapsAndSendsToRecipient() public {
         uint256 yieldAmount = 1e18;
 
@@ -103,12 +102,10 @@ contract RestlessSettlementHookTest is Test, Deployers {
         uint256 yieldAmount = 1e18;
 
         vm.expectEmit(true, true, false, false);
-        emit RestlessSettlementHook.YieldSwapped(recipient, outputToken, yieldAmount, 0);
+        emit IRestlessSettlementHook.YieldSwapped(recipient, outputToken, yieldAmount, 0);
 
         hook.settleWithSwap(recipient, yieldAmount, outputToken);
     }
-
-    // ─── Reverts ─────────────────────────────────────────────────
 
     function test_settleWithSwap_revertsIfNotSettlement() public {
         vm.prank(address(0xDEAD));
@@ -127,8 +124,6 @@ contract RestlessSettlementHookTest is Test, Deployers {
         hook.settleWithSwap(recipient, 1e18, unknownToken);
     }
 
-    // ─── setPoolKey ──────────────────────────────────────────────
-
     function test_setPoolKey_onlyOwner() public {
         vm.prank(address(0xDEAD));
         vm.expectRevert("Only owner");
@@ -139,14 +134,12 @@ contract RestlessSettlementHookTest is Test, Deployers {
         address token = address(0x999);
 
         vm.expectEmit(true, false, false, false);
-        emit RestlessSettlementHook.PoolKeySet(token);
+        emit IRestlessSettlementHook.PoolKeySet(token);
 
         hook.setPoolKey(token, poolKey);
 
         assertTrue(hook.poolConfigured(token));
     }
-
-    // ─── Hook permissions ────────────────────────────────────────
 
     function test_hookPermissions_onlyAfterSwap() public view {
         Hooks.Permissions memory perms = hook.getHookPermissions();
@@ -167,16 +160,12 @@ contract RestlessSettlementHookTest is Test, Deployers {
         assertFalse(perms.afterRemoveLiquidityReturnDelta);
     }
 
-    // ─── Immutables ──────────────────────────────────────────────
-
     function test_immutables() public view {
         assertEq(hook.inputToken(), inputToken);
         assertEq(hook.settlementAddress(), address(this));
         assertEq(hook.owner(), address(this));
         assertEq(address(hook.poolManager()), address(manager));
     }
-
-    // ─── unlockCallback ──────────────────────────────────────────
 
     function test_unlockCallback_revertsIfNotPoolManager() public {
         vm.prank(address(0xDEAD));

@@ -23,8 +23,8 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     uint256 public dealCount;
     mapping(uint256 => Deal) public deals;
 
-    uint256 public constant MIN_TIMEOUT = 1 days;
-    uint256 public constant MAX_TIMEOUT = 30 days;
+    uint32 public constant MIN_TIMEOUT = 1 days;
+    uint32 public constant MAX_TIMEOUT = 30 days;
     bytes32 public constant SETTLE_TYPEHASH =
         keccak256("SettleRequest(uint256 dealId,bytes32 dealHash)");
 
@@ -66,17 +66,16 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
 
         dealCount++;
         deals[dealCount] = Deal({
-            id: dealCount,
             depositor: msg.sender,
-            counterparty: params.counterparty,
-            amount: params.amount,
-            yieldSplitCounterparty: params.yieldSplitCounterparty,
+            createdAt: uint40(block.timestamp),
             status: DealStatus.Created,
+            yieldSplitCounterparty: params.yieldSplitCounterparty,
             timeout: params.timeout,
-            dealHash: params.dealHash,
-            createdAt: block.timestamp,
+            counterparty: params.counterparty,
             fundedAt: 0,
-            disputedAt: 0
+            disputedAt: 0,
+            amount: params.amount,
+            dealHash: params.dealHash
         });
 
         emit DealCreated(dealCount, msg.sender, params.counterparty, params.amount, params.dealHash);
@@ -86,12 +85,12 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function fundDeal(uint256 dealId) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
-        require(deal.id != 0, "Deal does not exist");
+        require(deal.depositor != address(0), "Deal does not exist");
         require(deal.status == DealStatus.Created, "Deal not in Created state");
         require(msg.sender == deal.depositor, "Only depositor can fund");
 
         deal.status = DealStatus.Funded;
-        deal.fundedAt = block.timestamp;
+        deal.fundedAt = uint40(block.timestamp);
 
         token.safeTransferFrom(msg.sender, address(this), deal.amount);
         token.approve(address(yieldAdapter), deal.amount);
@@ -103,7 +102,7 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function disputeDeal(uint256 dealId) external whenNotPaused {
         Deal storage deal = deals[dealId];
-        require(deal.id != 0, "Deal does not exist");
+        require(deal.depositor != address(0), "Deal does not exist");
         require(deal.status == DealStatus.Funded, "Deal not in Funded state");
         require(
             msg.sender == deal.depositor || msg.sender == deal.counterparty,
@@ -111,7 +110,7 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         );
 
         deal.status = DealStatus.Disputed;
-        deal.disputedAt = block.timestamp;
+        deal.disputedAt = uint40(block.timestamp);
 
         emit DealDisputed(dealId, msg.sender);
     }
@@ -119,7 +118,7 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function cancelDeal(uint256 dealId) external whenNotPaused {
         Deal storage deal = deals[dealId];
-        require(deal.id != 0, "Deal does not exist");
+        require(deal.depositor != address(0), "Deal does not exist");
         require(deal.status == DealStatus.Created, "Deal not in Created state");
         require(
             msg.sender == deal.depositor || msg.sender == deal.counterparty,
@@ -134,7 +133,7 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function settleDeal(uint256 dealId, bytes calldata lifiData) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
-        require(deal.id != 0, "Deal does not exist");
+        require(deal.depositor != address(0), "Deal does not exist");
         require(deal.status == DealStatus.Funded, "Deal not in Funded state");
         require(
             msg.sender == deal.depositor || msg.sender == deal.counterparty,
@@ -152,7 +151,7 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         bytes calldata counterpartySig
     ) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
-        require(deal.id != 0, "Deal does not exist");
+        require(deal.depositor != address(0), "Deal does not exist");
         require(deal.status == DealStatus.Funded, "Deal not in Funded state");
 
         bytes32 structHash = keccak256(
@@ -172,7 +171,7 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function settleDealWithHook(uint256 dealId, address preferredToken) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
-        require(deal.id != 0, "Deal does not exist");
+        require(deal.depositor != address(0), "Deal does not exist");
         require(deal.status == DealStatus.Funded, "Deal not in Funded state");
         require(
             msg.sender == deal.depositor || msg.sender == deal.counterparty,
@@ -190,7 +189,7 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         bytes calldata counterpartySig
     ) external nonReentrant whenNotPaused {
         Deal storage deal = deals[dealId];
-        require(deal.id != 0, "Deal does not exist");
+        require(deal.depositor != address(0), "Deal does not exist");
         require(deal.status == DealStatus.Funded, "Deal not in Funded state");
 
         bytes32 structHash = keccak256(
@@ -210,7 +209,7 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function claimTimeout(uint256 dealId) external nonReentrant {
         Deal storage deal = deals[dealId];
-        require(deal.id != 0, "Deal does not exist");
+        require(deal.depositor != address(0), "Deal does not exist");
         require(deal.status == DealStatus.Disputed, "Deal not in Disputed state");
         require(msg.sender == deal.depositor, "Only depositor can claim timeout");
         require(block.timestamp >= deal.disputedAt + deal.timeout, "Timeout not elapsed");
@@ -237,7 +236,6 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         deal.status = DealStatus.Settled;
 
         uint256 total = yieldAdapter.withdraw(dealId);
-        // Aave aToken rounding can return 1-2 wei less than deposited
         uint256 principal = total < deal.amount ? total : deal.amount;
 
         token.approve(address(settlement), total);
@@ -260,7 +258,6 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         deal.status = DealStatus.Settled;
 
         uint256 total = yieldAdapter.withdraw(dealId);
-        // Aave aToken rounding can return 1-2 wei less than deposited
         uint256 principal = total < deal.amount ? total : deal.amount;
 
         token.approve(address(settlement), total);

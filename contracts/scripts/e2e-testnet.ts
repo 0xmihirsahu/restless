@@ -279,7 +279,7 @@ for (let attempt = 0; attempt < 5; attempt++) {
     functionName: "getDeal",
     args: [dealId],
   });
-  if (dealAfterCreate.id === dealId) break;
+  if (dealAfterCreate.depositor !== "0x0000000000000000000000000000000000000000") break;
   console.log(`  Waiting for RPC to index deal ${dealId} (attempt ${attempt + 1}/5)...`);
   await sleep(3000);
 }

@@ -32,15 +32,14 @@ contract RestlessEscrowFuzzTest is Test {
         );
     }
 
-    /// @notice Fuzz: any valid deal params should create successfully
     function testFuzz_createDeal(
         uint256 amount,
         uint8 yieldSplit,
-        uint256 timeout
+        uint32 timeout
     ) public {
         amount = bound(amount, 1, type(uint128).max);
         yieldSplit = uint8(bound(yieldSplit, 0, 100));
-        timeout = bound(timeout, 1 days, 30 days);
+        timeout = uint32(bound(timeout, 1 days, 30 days));
 
         vm.prank(depositor);
         uint256 id = escrow.createDeal(CreateDealParams({
@@ -59,9 +58,8 @@ contract RestlessEscrowFuzzTest is Test {
         assertEq(uint8(deal.status), uint8(DealStatus.Created));
     }
 
-    /// @notice Fuzz: any deposit amount should fund and reach yield adapter
     function testFuzz_fundDeal(uint256 amount) public {
-        amount = bound(amount, 1, 1_000_000_000e6); // up to 1B USDC
+        amount = bound(amount, 1, 1_000_000_000e6);
 
         vm.prank(depositor);
         uint256 dealId = escrow.createDeal(CreateDealParams({
@@ -78,21 +76,19 @@ contract RestlessEscrowFuzzTest is Test {
         escrow.fundDeal(dealId);
         vm.stopPrank();
 
-        // Adapter should hold the tokens
         assertEq(usdc.balanceOf(address(adapter)), amount);
         Deal memory deal = escrow.getDeal(dealId);
         assertEq(uint8(deal.status), uint8(DealStatus.Funded));
     }
 
-    /// @notice Fuzz: timeout claim always returns principal + yield to depositor
     function testFuzz_claimTimeout_returns_funds(
         uint256 amount,
         uint256 mockYield,
-        uint256 timeout
+        uint32 timeout
     ) public {
         amount = bound(amount, 1, 1_000_000_000e6);
         mockYield = bound(mockYield, 0, 1_000_000e6);
-        timeout = bound(timeout, 1 days, 30 days);
+        timeout = uint32(bound(timeout, 1 days, 30 days));
 
         adapter.setMockYield(mockYield);
         usdc.mint(address(adapter), mockYield);
@@ -122,8 +118,7 @@ contract RestlessEscrowFuzzTest is Test {
         assertEq(uint8(escrow.getDeal(dealId).status), uint8(DealStatus.TimedOut));
     }
 
-    /// @notice Fuzz: invalid timeout values always revert
-    function testFuzz_invalid_timeout_reverts(uint256 timeout) public {
+    function testFuzz_invalid_timeout_reverts(uint32 timeout) public {
         vm.assume(timeout < 1 days || timeout > 30 days);
 
         vm.prank(depositor);

@@ -19,7 +19,7 @@ contract AaveYieldAdapter is IYieldAdapter {
     struct DepositRecord {
         uint256 principal;
         uint256 aTokenBalance;
-        uint256 depositTimestamp;
+        uint40 depositTimestamp;
         bool active;
     }
 
@@ -80,7 +80,7 @@ contract AaveYieldAdapter is IYieldAdapter {
         deposits[dealId] = DepositRecord({
             principal: amount,
             aTokenBalance: aTokenReceived,
-            depositTimestamp: block.timestamp,
+            depositTimestamp: uint40(block.timestamp),
             active: true
         });
         totalDeposited += amount;

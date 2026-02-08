@@ -17,31 +17,29 @@ struct CreateDealParams {
     address counterparty;
     uint256 amount;
     uint8 yieldSplitCounterparty;
-    uint256 timeout;
+    uint32 timeout;
     bytes32 dealHash;
 }
 
+/// @dev Storage-packed: 4 slots (down from 10)
+/// Slot 0: depositor(20) + createdAt(5) + status(1) + yieldSplitCounterparty(1) + timeout(4) = 31 bytes
+/// Slot 1: counterparty(20) + fundedAt(5) + disputedAt(5) = 30 bytes
+/// Slot 2: amount (32 bytes)
+/// Slot 3: dealHash (32 bytes)
 struct Deal {
-    uint256 id;
     address depositor;
-    address counterparty;
-    uint256 amount;
-    uint8 yieldSplitCounterparty;
+    uint40 createdAt;
     DealStatus status;
-    uint256 timeout;
+    uint8 yieldSplitCounterparty;
+    uint32 timeout;
+    address counterparty;
+    uint40 fundedAt;
+    uint40 disputedAt;
+    uint256 amount;
     bytes32 dealHash;
-    uint256 createdAt;
-    uint256 fundedAt;
-    uint256 disputedAt;
 }
 
-/// @notice Parameters for settling a deal
-/// @param dealId The deal identifier
-/// @param depositor The depositor address
-/// @param counterparty The counterparty address
-/// @param principal The original deposited amount
-/// @param total The total withdrawn amount (principal + yield)
-/// @param yieldSplitCounterparty Percentage of yield going to counterparty (0-100)
+/// @notice Parameters for settling a deal (calldata-only, no storage packing needed)
 struct SettleParams {
     uint256 dealId;
     address depositor;

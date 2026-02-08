@@ -20,7 +20,7 @@ contract RestlessEscrowTest is Test {
 
     uint256 constant AMOUNT = 5000e6;
     uint256 constant MOCK_YIELD = 100e6;
-    uint256 constant TIMEOUT = 7 days;
+    uint32 constant TIMEOUT = 7 days;
     bytes32 constant DEAL_HASH = keccak256("test-deal");
 
     function setUp() public {

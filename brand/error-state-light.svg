@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 280" width="320" height="280">
+  <circle cx="160" cy="140" r="100" fill="none" stroke="#EF4444" stroke-width="2" opacity="0.15"/>
+  <g transform="translate(160, 150) scale(0.65)">
+    <path d="M 0 -100 L 42 -70 L 52 -60 L 57 -35 L 49 -10 L 27 5 L 0 10 L -27 5 L -49 -10 L -57 -35 L -52 -60 L -42 -70 Z" fill="#E2E8F0"/>
+    <path d="M 0 -40 L 24 -25 L 27 -5 L 17 15 L 0 20 L -17 15 L -27 -5 L -24 -25 Z" fill="#CBD5E1"/>
+    <path d="M 0 -112 L 37 -82 L 44 -62 L 42 -42 L 27 -30 L 0 -25 L -27 -30 L -42 -42 L -44 -62 L -37 -82 Z" fill="#E2E8F0"/>
+    <polygon points="-35,-80 -48,-120 -28,-87" fill="#E2E8F0"/>
+    <polygon points="-33,-78 -43,-110 -26,-84" fill="#CBD5E1"/>
+    <polygon points="35,-80 48,-120 28,-87" fill="#E2E8F0"/>
+    <polygon points="33,-78 43,-110 26,-84" fill="#CBD5E1"/>
+    <path d="M -20 -67 C -33 -62, -39 -50, -36 -40 C -32 -28, -20 -22, -10 -24 C 0 -26, 0 -33, -3 -43 C -6 -58, -12 -67, -20 -67 Z" fill="#CBD5E1"/>
+    <path d="M 20 -67 C 33 -62, 39 -50, 36 -40 C 32 -28, 20 -22, 10 -24 C 0 -26, 0 -33, 3 -43 C 6 -58, 12 -67, 20 -67 Z" fill="#CBD5E1"/>
+    <polygon points="0,-52 -6,-42 0,-34 6,-42" fill="#F59E0B"/>
+    <polygon points="0,-52 -6,-42 0,-40 6,-42" fill="#FBBF24"/>
+    <ellipse cx="0" cy="-31" rx="4" ry="2.5" fill="#F59E0B" opacity="0.7"/>
+    <circle cx="-20" cy="-46" r="14" fill="#94A3B8"/>
+    <circle cx="-20" cy="-46" r="10" fill="#1A3A6E"/>
+    <circle cx="-20" cy="-46" r="8" fill="#3B82F6"/>
+    <circle cx="-20" cy="-46" r="5.5" fill="#2563EB"/>
+    <circle cx="-20" cy="-46" r="3.5" fill="#F1F5F9"/>
+    <circle cx="-17" cy="-49" r="2" fill="#FFFFFF" opacity="0.8"/>
+    <circle cx="-22" cy="-43" r="1" fill="#FFFFFF" opacity="0.4"/>
+    <circle cx="20" cy="-46" r="14" fill="#94A3B8"/>
+    <circle cx="20" cy="-46" r="10" fill="#1A3A6E"/>
+    <circle cx="20" cy="-46" r="8" fill="#3B82F6"/>
+    <circle cx="20" cy="-46" r="5.5" fill="#2563EB"/>
+    <circle cx="20" cy="-46" r="3.5" fill="#F1F5F9"/>
+    <circle cx="23" cy="-49" r="2" fill="#FFFFFF" opacity="0.8"/>
+    <circle cx="18" cy="-43" r="1" fill="#FFFFFF" opacity="0.4"/>
+    <line x1="-48" y1="-35" x2="-28" y2="-7" stroke="#94A3B8" stroke-width="1" stroke-linecap="round"/>
+    <line x1="-51" y1="-26" x2="-31" y2="0" stroke="#94A3B8" stroke-width="1" stroke-linecap="round"/>
+    <line x1="48" y1="-35" x2="28" y2="-7" stroke="#94A3B8" stroke-width="1" stroke-linecap="round"/>
+    <line x1="51" y1="-26" x2="31" y2="0" stroke="#94A3B8" stroke-width="1" stroke-linecap="round"/>
+    <polyline points="-10,-10 0,-5 10,-10" fill="none" stroke="#94A3B8" stroke-width="0.8"/>
+    <polyline points="-13,-2 0,4 13,-2" fill="none" stroke="#94A3B8" stroke-width="0.8"/>
+  </g>
+  <g transform="translate(235, 58)">
+    <polygon points="0,-18 16,12 -16,12" fill="#F1F5F9" stroke="#EF4444" stroke-width="2" stroke-linejoin="round"/>
+    <text x="0" y="7" font-family="Inter, Helvetica, Arial, sans-serif" font-size="18" font-weight="800" fill="#EF4444" text-anchor="middle">!</text>
+  </g>
+  <line x1="100" y1="85" x2="90" y2="75" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round" opacity="0.25"/>
+  <line x1="95" y1="100" x2="82" y2="95" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round" opacity="0.2"/>
+  <line x1="225" y1="195" x2="240" y2="200" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round" opacity="0.2"/>
+</svg>

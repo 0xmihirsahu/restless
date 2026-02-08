@@ -6,6 +6,7 @@ import { use, useState, useEffect } from "react";
 import Image from "next/image";
 import { useAccount } from "wagmi";
 import { formatUnits } from "viem";
+import { useTheme } from "next-themes";
 import { useDeal } from "@/hooks/useDeal";
 import { useSettleDeal, useSettleDealWithHook, useDisputeDeal, useCancelDeal, useClaimTimeout, useFundDeal, useApproveUSDC } from "@/hooks/useEscrowWrite";
 import { getDealStatusLabel, getDealStatusColor } from "@/lib/contracts";
@@ -24,6 +25,10 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const dealId = BigInt(id);
   const { address } = useAccount();
   const { deal, isLoading, refetch } = useDeal(dealId);
+  const { resolvedTheme } = useTheme();
+  const [themeMounted, setThemeMounted] = useState(false);
+  useEffect(() => setThemeMounted(true), []);
+  const isLight = themeMounted && resolvedTheme === "light";
 
   const { settleDeal, isPending: settlePending } = useSettleDeal();
   const { settleDealWithHook, isPending: hookPending } = useSettleDealWithHook();
@@ -42,7 +47,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     return (
       <main className="min-h-[calc(100vh-65px)]">
         <div className="max-w-3xl mx-auto px-6 py-16 flex flex-col items-center justify-center">
-          <Image src="/brand/loading-spinner.svg" alt="" width={48} height={48} className="mb-4 animate-spin" />
+          <Image src={isLight ? "/brand/loading-spinner-light.svg" : "/brand/loading-spinner.svg"} alt="" width={48} height={48} className="mb-4 animate-spin" />
           <p className="text-sm text-muted-foreground">loading deal #{id}...</p>
         </div>
       </main>
@@ -53,7 +58,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     return (
       <main className="min-h-[calc(100vh-65px)]">
         <div className="max-w-3xl mx-auto px-6 py-16 flex flex-col items-center justify-center">
-          <Image src="/brand/error-state.svg" alt="Not found" width={160} height={140} className="mb-4 opacity-80" />
+          <Image src={isLight ? "/brand/error-state-light.svg" : "/brand/error-state.svg"} alt="Not found" width={160} height={140} className="mb-4 opacity-80" />
           <p className="text-sm text-muted-foreground">deal #{id} not found</p>
         </div>
       </main>
@@ -141,13 +146,13 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           )}
           {deal.status === 2 && (
             <div className="flex items-center gap-2">
-              <Image src="/brand/success-state.svg" alt="" width={20} height={20} />
+              <Image src={isLight ? "/brand/success-state-light.svg" : "/brand/success-state.svg"} alt="" width={20} height={20} />
               <span className="text-emerald font-medium">settled</span>
             </div>
           )}
           {deal.status === 4 && (
             <div className="flex items-center gap-2">
-              <Image src="/brand/error-state.svg" alt="" width={20} height={20} />
+              <Image src={isLight ? "/brand/error-state-light.svg" : "/brand/error-state.svg"} alt="" width={20} height={20} />
               <span className="text-destructive">timed out — refunded to depositor</span>
             </div>
           )}

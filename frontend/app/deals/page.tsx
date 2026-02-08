@@ -2,10 +2,12 @@
 
 export const dynamic = "force-dynamic";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAccount } from "wagmi";
 import { formatUnits } from "viem";
+import { useTheme } from "next-themes";
 import { useDealCount, useDeals } from "@/hooks/useDeal";
 import { getDealStatusLabel, getDealStatusColor } from "@/lib/contracts";
 import { EnsName } from "@/components/EnsName";
@@ -15,7 +17,11 @@ export default function DealsPage() {
   const { dealCount, isLoading: countLoading } = useDealCount();
   const count = dealCount ? Number(dealCount) : 0;
   const { deals, isLoading: dealsLoading } = useDeals(count);
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
+  const isLight = mounted && resolvedTheme === "light";
   const isLoading = countLoading || dealsLoading;
 
   const myDeals = deals?.filter(
@@ -50,14 +56,14 @@ export default function DealsPage() {
 
         {address && isLoading && (
           <div className="border border-border p-12 text-center flex flex-col items-center animate-fade-up">
-            <Image src="/brand/loading-spinner.svg" alt="" width={48} height={48} className="mb-4 animate-spin" />
+            <Image src={isLight ? "/brand/loading-spinner-light.svg" : "/brand/loading-spinner.svg"} alt="" width={48} height={48} className="mb-4 animate-spin" />
             <p className="text-sm text-muted-foreground">loading deals...</p>
           </div>
         )}
 
         {address && !isLoading && (!myDeals || myDeals.length === 0) && (
           <div className="border border-border p-10 text-center flex flex-col items-center animate-fade-up">
-            <Image src="/brand/empty-state.svg" alt="No deals" width={200} height={175} className="mb-6 opacity-80" />
+            <Image src={isLight ? "/brand/empty-state-light.svg" : "/brand/empty-state.svg"} alt="No deals" width={200} height={175} className="mb-6 opacity-80" />
             <p className="text-sm text-muted-foreground mb-4">no deals yet</p>
             <Link
               href="/deals/new"

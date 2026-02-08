@@ -33,7 +33,10 @@ const RestlessModule = buildModule("RestlessModule", (m) => {
   // 4. Link adapter to escrow (one-time initialization)
   m.call(adapter, "setEscrow", [escrow]);
 
-  // 5. Deploy MockRestlessSettlementHook for testnet demo
+  // 5. Link settlement to escrow (one-time initialization)
+  m.call(settlement, "setEscrow", [escrow]);
+
+  // 6. Deploy MockRestlessSettlementHook for testnet demo
   //    The real RestlessSettlementHook (v4 BaseHook) requires CREATE2 deployment
   //    with mined address bits — see scripts/deploy-hook.ts for production deploy.
   const hook = m.contract("MockRestlessSettlementHook", [
@@ -41,7 +44,7 @@ const RestlessModule = buildModule("RestlessModule", (m) => {
     settlement,
   ]);
 
-  // 6. Link hook to settlement
+  // 7. Link hook to settlement
   m.call(settlement, "setHook", [hook]);
 
   return { settlement, adapter, escrow, hook };

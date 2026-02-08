@@ -64,7 +64,7 @@ export function EnsAddressInput({ value, onChange, selfAddress }: EnsAddressInpu
       />
 
       {/* Resolution feedback */}
-      <div className="mt-1 min-h-[1.25rem]">
+      <div className="mt-1 min-h-5">
         {isEnsInput && isResolving && (
           <p className="text-xs text-muted-foreground animate-pulse">resolving {input}...</p>
         )}

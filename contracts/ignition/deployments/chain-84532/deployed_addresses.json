@@ -1,6 +1,6 @@
 {
-  "RestlessModule#AaveYieldAdapter": "0xF2B99E27196809aFd35A5C1E1F0747A0540E51b6",
-  "RestlessModule#Settlement": "0x2ED54fB830F51C5519AAfF5698dab4DAC71163b2",
-  "RestlessModule#MockRestlessSettlementHook": "0x95a041F9922A781D49c5b900C817EFe446300B44",
-  "RestlessModule#RestlessEscrow": "0xDCe58c9739a9F629cdFf840F9DA15AC82495B933"
+  "RestlessModule#AaveYieldAdapter": "0x283A90fc1255ec7d134Ca8056d83ECA2f4978A2f",
+  "RestlessModule#Settlement": "0x03DAE4F0964A83889fD243bc24b9eF9A5fb5C358",
+  "RestlessModule#MockRestlessSettlementHook": "0x7185b6c205Cb9Daa53166Db5225b80F7A68c65a7",
+  "RestlessModule#RestlessEscrow": "0x33e63071b9E6412CEB39F18903cAb56478Ec3f4E"
 }

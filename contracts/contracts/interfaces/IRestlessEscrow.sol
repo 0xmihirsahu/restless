@@ -7,6 +7,8 @@ import {CreateDealParams, Deal} from "../Types.sol";
 /// @notice P2P escrow where locked funds earn yield while waiting for deal completion
 /// @dev Escrow never holds tokens directly — routes to yield adapter immediately
 interface IRestlessEscrow {
+    error OnlyOwner();
+    error InvalidAddress();
     error InvalidCounterparty();
     error CannotEscrowWithSelf();
     error InvalidAmount();

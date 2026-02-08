@@ -28,6 +28,7 @@ interface ISettlement {
     );
 
     event HookUpdated(address indexed hook);
+    event EscrowUpdated(address indexed escrow);
 
     /// @notice Settle a deal: split yield and pay out parties
     /// @param params The settlement parameters

@@ -8,7 +8,6 @@ import "../../contracts/mocks/MockYieldAdapter.sol";
 import "../../contracts/mocks/MockSettlement.sol";
 import {DealStatus, CreateDealParams, Deal} from "../../contracts/Types.sol";
 import "../../contracts/interfaces/IRestlessEscrow.sol";
-import {OnlyOwner} from "../../contracts/RestlessEscrow.sol";
 
 contract RestlessEscrowTest is Test {
     RestlessEscrow public escrow;
@@ -363,7 +362,7 @@ contract RestlessEscrowTest is Test {
 
     function test_pause_revert_non_owner() public {
         vm.prank(stranger);
-        vm.expectRevert(abi.encodeWithSelector(OnlyOwner.selector));
+        vm.expectRevert(abi.encodeWithSelector(IRestlessEscrow.OnlyOwner.selector));
         escrow.pause();
     }
 

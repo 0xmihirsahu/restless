@@ -41,6 +41,7 @@ contract Settlement is ISettlement {
     function setEscrow(address _escrow) external onlyOwner {
         if (_escrow == address(0)) revert InvalidEscrow();
         escrow = _escrow;
+        emit EscrowUpdated(_escrow);
     }
 
     function setHook(address _hook) external onlyOwner {
@@ -99,6 +100,14 @@ contract Settlement is ISettlement {
         }
 
         emit DealSettled(params.dealId, params.depositor, params.counterparty, params.principal + counterpartyYield, depositorYield);
+    }
+
+    /// @notice Rescue tokens accidentally sent to this contract
+    /// @param _token The token to rescue
+    /// @param to The recipient
+    /// @param amount The amount to rescue
+    function rescueTokens(IERC20 _token, address to, uint256 amount) external onlyOwner {
+        _token.safeTransfer(to, amount);
     }
 
     function _validateSettleParams(SettleParams calldata params) internal pure {

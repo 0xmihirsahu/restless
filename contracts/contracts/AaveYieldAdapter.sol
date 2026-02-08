@@ -61,6 +61,14 @@ contract AaveYieldAdapter is IYieldAdapter {
         emit EscrowSet(_escrow);
     }
 
+    /// @notice Rescue tokens accidentally sent to this contract
+    /// @param _token The token to rescue
+    /// @param to The recipient
+    /// @param amount The amount to rescue
+    function rescueTokens(IERC20 _token, address to, uint256 amount) external onlyOwner {
+        _token.safeTransfer(to, amount);
+    }
+
     /// @inheritdoc IYieldAdapter
     function deposit(uint256 dealId, uint256 amount) external onlyEscrow {
         if (deposits[dealId].active) revert DealAlreadyDeposited();

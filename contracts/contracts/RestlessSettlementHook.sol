@@ -99,6 +99,14 @@ contract RestlessSettlementHook is BaseHook, IUnlockCallback, IRestlessSettlemen
         emit PoolKeySet(preferredToken);
     }
 
+    /// @notice Rescue tokens accidentally sent to this contract
+    /// @param _token The token to rescue
+    /// @param to The recipient
+    /// @param amount The amount to rescue
+    function rescueTokens(IERC20 _token, address to, uint256 amount) external onlyOwner {
+        _token.safeTransfer(to, amount);
+    }
+
     /// @inheritdoc IRestlessSettlementHook
     function settleWithSwap(
         address recipient,
@@ -158,7 +166,7 @@ contract RestlessSettlementHook is BaseHook, IUnlockCallback, IRestlessSettlemen
         uint256 amountToPay = uint256(uint128(-inputDelta));
 
         poolManager.sync(inputCurrency);
-        IERC20(Currency.unwrap(inputCurrency)).transfer(address(poolManager), amountToPay);
+        IERC20(Currency.unwrap(inputCurrency)).safeTransfer(address(poolManager), amountToPay);
         poolManager.settle();
     }
 

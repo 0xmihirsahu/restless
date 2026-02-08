@@ -12,9 +12,6 @@ import "./interfaces/IYieldAdapter.sol";
 import "./interfaces/ISettlement.sol";
 import {DealStatus, CreateDealParams, Deal, SettleParams} from "./Types.sol";
 
-error OnlyOwner();
-error InvalidAddress();
-
 contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     using SafeERC20 for IERC20;
 
@@ -32,16 +29,16 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         keccak256("SettleRequest(uint256 dealId,bytes32 dealHash)");
 
     modifier onlyOwner() {
-        if (msg.sender != owner) revert OnlyOwner();
+        if (msg.sender != owner) revert IRestlessEscrow.OnlyOwner();
         _;
     }
 
     constructor(address _token, address _yieldAdapter, address _settlement)
         EIP712("RestlessEscrow", "1")
     {
-        if (_token == address(0)) revert InvalidAddress();
-        if (_yieldAdapter == address(0)) revert InvalidAddress();
-        if (_settlement == address(0)) revert InvalidAddress();
+        if (_token == address(0)) revert IRestlessEscrow.InvalidAddress();
+        if (_yieldAdapter == address(0)) revert IRestlessEscrow.InvalidAddress();
+        if (_settlement == address(0)) revert IRestlessEscrow.InvalidAddress();
 
         token = IERC20(_token);
         yieldAdapter = IYieldAdapter(_yieldAdapter);
@@ -219,6 +216,14 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
     /// @inheritdoc IRestlessEscrow
     function getAccruedYield(uint256 dealId) external view returns (uint256) {
         return yieldAdapter.getAccruedYield(dealId);
+    }
+
+    /// @notice Rescue tokens accidentally sent to this contract
+    /// @param _token The token to rescue
+    /// @param to The recipient
+    /// @param amount The amount to rescue
+    function rescueTokens(IERC20 _token, address to, uint256 amount) external onlyOwner {
+        _token.safeTransfer(to, amount);
     }
 
     function _executeSettlement(Deal storage deal, uint256 dealId, bytes calldata lifiData) internal {

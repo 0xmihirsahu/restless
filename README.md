@@ -27,6 +27,7 @@ Restless auto-deposits escrowed USDC into Aave V3 to earn yield while parties ne
 ┌─────────────────────────────────────────────────┐
 │              RestlessEscrow.sol                  │
 │  (State machine: create → fund → settle)        │
+│  EIP-712 signed settlements · EIP-1271 support  │
 └──────────┬──────────────────┬────────────────────┘
            │                  │
    ┌───────▼──────┐   ┌──────▼───────────┐
@@ -87,6 +88,44 @@ Human-readable names throughout the app. ENS text records as a deal preference l
 
 **Files:** `frontend/components/EnsName.tsx`, `frontend/components/EnsAddressInput.tsx`, `frontend/hooks/useEnsPreferences.ts`
 
+## Security
+
+### Signature Verification
+
+Signed settlements use **EIP-712 typed data** for structured, phishing-resistant signatures. Verification is handled via OpenZeppelin's `SignatureChecker.isValidSignatureNow`, which supports both:
+
+- **EOA wallets** — standard ECDSA recovery
+- **Smart contract wallets** (EIP-1271) — Safe, Argent, Coinbase Smart Wallet, etc.
+
+A public `getSettleDigest(dealId)` view function is exposed for off-chain tooling to compute the exact EIP-712 hash to sign, without reimplementing domain separation logic.
+
+### Error Handling
+
+All custom errors include **contextual parameters** for easier debugging — callers, deal IDs, actual vs expected values:
+
+```solidity
+error Unauthorized(address caller, uint256 dealId);
+error InvalidDealStatus(uint256 dealId, DealStatus current);
+error InvalidTimeout(uint32 provided, uint32 min, uint32 max);
+error TimeoutNotElapsed(uint256 currentTime, uint256 expiresAt);
+error TotalLessThanPrincipal(uint256 total, uint256 principal);
+error InvalidSignature(address signer);
+```
+
+### Token Safety
+
+- **`SafeERC20`** used for all token operations across every contract
+- **Fee-on-transfer protection** — `fundDeal` verifies the received balance matches the expected amount, reverting with `FeeOnTransferNotSupported()` if tokens are silently taxed
+- **`ReentrancyGuard`** on all state-changing external functions that move tokens
+- **`Pausable`** — owner can pause the escrow in emergencies
+
+### Access Control
+
+- `onlyOwner` — admin functions (pause, unpause, rescue tokens, configure addresses)
+- `onlyEscrow` — settlement and adapter functions restricted to the escrow contract
+- `onlySettlement` — hook functions restricted to the settlement contract
+- `rescueTokens` — owner-only function on all contracts to recover accidentally sent tokens
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -106,11 +145,12 @@ Human-readable names throughout the app. ENS text records as a deal preference l
 restless/
 ├── contracts/                 # Hardhat 3 + Foundry
 │   ├── contracts/
-│   │   ├── RestlessEscrow.sol           # Core escrow state machine
+│   │   ├── RestlessEscrow.sol           # Core escrow state machine + EIP-712 signed settlements
 │   │   ├── AaveYieldAdapter.sol         # Aave V3 deposit/withdraw
 │   │   ├── Settlement.sol               # Payout + LI.FI + yield split
 │   │   ├── RestlessSettlementHook.sol   # Uniswap v4 BaseHook
-│   │   └── interfaces/                  # IYieldAdapter, ISettlement, IRestlessSettlementHook
+│   │   ├── Types.sol                    # Shared structs and enums
+│   │   └── interfaces/                  # IRestlessEscrow, IYieldAdapter, ISettlement, IRestlessSettlementHook
 │   └── test/
 │       ├── solidity/                    # Forge tests (escrow, settlement, v4 hook, fuzz)
 │       └── typescript/                  # Hardhat tests (escrow, adapter, settlement, integration)
@@ -134,10 +174,11 @@ restless/
 │   │   ├── useEnsPreferences.ts        # ENS text record preferences
 │   │   ├── useDeal.ts                  # Deal reading hooks
 │   │   └── useEscrowWrite.ts           # Deal write operations
-│   └── lib/
-│       ├── yellow.ts                    # Yellow/Nitrolite service layer
-│       ├── lifi.ts                      # LI.FI SDK configuration
-│       └── contracts.ts                 # Contract addresses + ABIs
+│   ├── lib/
+│   │   ├── yellow.ts                    # Yellow/Nitrolite service layer
+│   │   ├── lifi.ts                      # LI.FI SDK configuration
+│   │   └── contracts.ts                 # Contract addresses + ABIs
+│   └── src/contracts/                   # ABI JSON files (synced from Hardhat artifacts)
 │
 └── docs/plans/                # Design document
 ```
@@ -215,21 +256,25 @@ cd contracts && forge test    # 63 Solidity tests (including v4 hook + fuzz test
 ```
 
 Test coverage:
-- **RestlessEscrow**: Full lifecycle (create, fund, settle, dispute, timeout, cancel)
+- **RestlessEscrow**: Full lifecycle (create, fund, settle, dispute, timeout, cancel), signed settlements with EIP-712, access control with parameterized error assertions
 - **AaveYieldAdapter**: Deposit, withdraw, yield accrual
-- **Settlement**: Yield splitting, LI.FI cross-chain, hook integration
+- **Settlement**: Yield splitting, LI.FI cross-chain, hook integration, parameterized error validation
 - **RestlessSettlementHook**: v4 swap execution, afterSwap events, access control
 - **Integration**: End-to-end escrow → Aave → settlement → hook flow
-- **Fuzz tests**: Settlement amounts, escrow parameters
+- **Fuzz tests**: Settlement amounts, yield splits, escrow parameters, timeout bounds
 
 ## Architecture Decisions
 
 - **Adapter pattern** for yield source — swap Aave for Morpho without touching escrow logic
+- **SignatureChecker over ECDSA.recover** — supports both EOA and smart contract wallets (EIP-1271)
+- **Parameterized errors** — every revert includes context (caller, deal ID, actual vs expected values) for debuggability
+- **Fee-on-transfer guard** — explicit balance check on funding prevents accounting bugs with non-standard tokens
 - **State channels are optional** — on-chain settlement works without Yellow connection
 - **LI.FI cross-chain is optional** — same-chain settlement is the default
 - **v4 hook is optional** — yield paid in USDC by default, hook swaps to preferred token
 - **ENS preferences are read-only** — counterparties opt in by setting text records
 - **Escrow never holds tokens** — funds route to Aave immediately on funding
+- **Rescue functions on all contracts** — owner can recover accidentally sent tokens
 
 ## License
 

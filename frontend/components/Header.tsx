@@ -37,13 +37,13 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-5xl mx-auto px-6 h-18 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-            <Image src={logoSrc} alt="Restless" width={140} height={24} priority />
+            <Image src={logoSrc} alt="Restless" width={300} height={52} priority />
           </Link>
 
-          <nav className="hidden sm:flex items-center gap-5 text-sm">
+          <nav className="hidden sm:flex items-center gap-6 text-[15px]">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}

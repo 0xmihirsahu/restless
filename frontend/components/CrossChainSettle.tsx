@@ -7,8 +7,7 @@ import { useLifiQuote } from "@/hooks/useLifiQuote";
 import { CROSS_CHAIN_TARGETS } from "@/lib/lifi";
 
 const HOOK_TOKEN_PRESETS: { label: string; address: `0x${string}` }[] = [
-  { label: "WETH", address: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14" },
-  { label: "DAI", address: "0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357" },
+  { label: "WETH", address: "0x4200000000000000000000000000000000000006" },
 ];
 
 type CrossChainSettleProps = {

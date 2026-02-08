@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "./interfaces/IRestlessEscrow.sol";
 import "./interfaces/IYieldAdapter.sol";
 import "./interfaces/ISettlement.sol";
@@ -153,11 +153,10 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         );
         bytes32 digest = _hashTypedDataV4(structHash);
 
-        address recoveredDepositor = ECDSA.recover(digest, depositorSig);
-        if (recoveredDepositor != deal.depositor) revert IRestlessEscrow.InvalidSignature();
-
-        address recoveredCounterparty = ECDSA.recover(digest, counterpartySig);
-        if (recoveredCounterparty != deal.counterparty) revert IRestlessEscrow.InvalidSignature();
+        if (!SignatureChecker.isValidSignatureNow(deal.depositor, digest, depositorSig))
+            revert IRestlessEscrow.InvalidSignature();
+        if (!SignatureChecker.isValidSignatureNow(deal.counterparty, digest, counterpartySig))
+            revert IRestlessEscrow.InvalidSignature();
 
         _executeSettlement(deal, dealId, lifiData);
     }
@@ -188,11 +187,10 @@ contract RestlessEscrow is IRestlessEscrow, ReentrancyGuard, Pausable, EIP712 {
         );
         bytes32 digest = _hashTypedDataV4(structHash);
 
-        address recoveredDepositor = ECDSA.recover(digest, depositorSig);
-        if (recoveredDepositor != deal.depositor) revert IRestlessEscrow.InvalidSignature();
-
-        address recoveredCounterparty = ECDSA.recover(digest, counterpartySig);
-        if (recoveredCounterparty != deal.counterparty) revert IRestlessEscrow.InvalidSignature();
+        if (!SignatureChecker.isValidSignatureNow(deal.depositor, digest, depositorSig))
+            revert IRestlessEscrow.InvalidSignature();
+        if (!SignatureChecker.isValidSignatureNow(deal.counterparty, digest, counterpartySig))
+            revert IRestlessEscrow.InvalidSignature();
 
         _executeHookSettlement(deal, dealId, preferredToken);
     }
